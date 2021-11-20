@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+      "module": "commonjs",
+      "target": "es2017",
+      "outDir": "out",
+      "lib": [
+          "es2017",
+          "dom"
+      ],
+      "sourceMap": true,
+      "rootDir": ".",
+      "baseUrl": ".",
+      "experimentalDecorators": true,
+      "strict": true,
+      "strictNullChecks": true,
+      "forceConsistentCasingInFileNames": true,
+      "allowJs": false,
+      "declaration": true
+  },
+  "exclude": [
+      "node_modules",
+      "out"
+  ]
+}

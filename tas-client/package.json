@@ -1,0 +1,45 @@
+{
+  "name": "tas-client",
+  "version": "0.0.0-placeholder",
+  "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
+  "main": "./out/src/index",
+  "scripts": {
+    "compile": "tsc -p ./",
+    "eslint": "eslint src --ext ts",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && mocha --require source-map-support/register out/test/*.js",
+    "clean-build-link": "npm install && npm run compile && npm link",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "test-publish": "gulp test-pack-publish",
+    "publish": "gulp pack-publish"
+  },
+  "keywords": [
+    "tas-client"
+  ],
+  "author": "Microsoft",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/chai": "^4.2.4",
+    "@types/mocha": "^7.0.2",
+    "@types/node": "^12.0.1",
+    "@types/semver": "^5.4.0",
+    "@typescript-eslint/eslint-plugin-tslint": "^1.10.2",
+    "@typescript-eslint/parser": "^1.10.2",
+    "chai": "^4.2.0",
+    "eslint": "^5.16.0",
+    "eslint-config-prettier": "^5.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "gulp": "^4.0.2",
+    "mocha": "^8.0.1",
+    "nerdbank-gitversioning": "^3.3.37",
+    "prettier": "^1.18.2",
+    "source-map-support": "^0.5.16",
+    "ts-node": "^8.10.1",
+    "tslint": "^5.17.0",
+    "tslint-microsoft-contrib": "^6.2.0",
+    "typescript": "^3.7.2"
+  },
+  "dependencies": {
+    "axios": "^0.22.0"
+  }
+}
