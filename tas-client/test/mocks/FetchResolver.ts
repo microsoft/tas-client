@@ -14,7 +14,8 @@ export class FetchResolver {
 
     public nextResult(): FeatureData {
         if (this.lastServed >= this.availableResults.length) {
-            this.lastServed = 0;
+            // Always keep serving the last result.
+            this.lastServed = this.availableResults.length - 1;
         }
 
         let nextResult = this.availableResults[this.lastServed];

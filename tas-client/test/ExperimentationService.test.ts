@@ -78,7 +78,7 @@ describe('Get features from multiple providers that differ in polling intervals 
     // feature set to avoid changing flights mid-session due to a background poll.
     it('background poll should not change in memory features.', async () => {
         // Wait for the experimentation service to do an initial poll.
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
             setTimeout(() => resolve(), 200);
         });
 
@@ -210,7 +210,7 @@ describe('Get features from multiple providers that differ in polling intervals 
         service = new ExperimentationServiceMock([], testSpecs, 1000, undefined, storage);
         // Wait for the experimentation service to do an initial poll
         // so we can check the cached features.
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
             setTimeout(() => resolve(), 400);
         });
 
@@ -303,7 +303,7 @@ describe('Get features from multiple providers that differ in polling intervals 
 
     // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco']
     it('should automatically refetch the third result and update cache.', async () => {
-        await new Promise((resolve) => {
+        await new Promise<void>((resolve) => {
             setTimeout(() => resolve(), 1200); // 1200 ms, because it takes 1000 ms to do the polling, and 200ms to complete the fetch.
         });
 
@@ -446,41 +446,41 @@ describe('Auto-polling disabled test', () => {
         },
     ];
     
-        // The current result will be:
-        // ['kirby', 'falco', 'fox', 'joker'] from provider 1
-        // ['lucario', 'kirby', 'ness'] from provider 2
-        // ['mario', 'kingdedede', 'lucario'] from provider 3
-        // it's total 10 but we subtract two because kirby and lucario are repeated.
-        it('should fetch elements from all providers with no autopolling, and save them to cache.', async () => {
-            let storage = new KeyValueStorageMock();
-            let service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-            // Wait for the experimentation service to do an initial poll
-            // so we can check the cached features.
-            await new Promise((resolve) => {
-                setTimeout(() => resolve(), 400);
-            });
-    
-            // No need to call isFlightEnabledAsync because the ExperimentationService should
-            // request features from providers on start.
-            let kirby = await service.isCachedFlightEnabled('kirby');
-            let falco = await service.isCachedFlightEnabled('falco');
-            let fox = await service.isCachedFlightEnabled('fox');
-            let joker = await service.isCachedFlightEnabled('joker');
-            let lucario = await service.isCachedFlightEnabled('lucario');
-            let ness = await service.isCachedFlightEnabled('ness');
-            let mario = await service.isCachedFlightEnabled('mario');
-            let kingdedede = await service.isCachedFlightEnabled('kingdedede');
-    
-            // validate that all the correct elements are inside the array.
-            expect(kirby).to.equal(true);
-            expect(falco).to.equal(true);
-            expect(fox).to.equal(true);
-            expect(joker).to.equal(true);
-            expect(lucario).to.equal(true);
-            expect(ness).to.equal(true);
-            expect(mario).to.equal(true);
-            expect(kingdedede).to.equal(true);
+    // The current result will be:
+    // ['kirby', 'falco', 'fox', 'joker'] from provider 1
+    // ['lucario', 'kirby', 'ness'] from provider 2
+    // ['mario', 'kingdedede', 'lucario'] from provider 3
+    // it's total 10 but we subtract two because kirby and lucario are repeated.
+    it('should fetch elements from all providers with no autopolling, and save them to cache.', async () => {
+        let storage = new KeyValueStorageMock();
+        let service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
+        // Wait for the experimentation service to do an initial poll
+        // so we can check the cached features.
+        await new Promise<void>((resolve) => {
+            setTimeout(() => resolve(), 400);
         });
+
+        // No need to call isFlightEnabledAsync because the ExperimentationService should
+        // request features from providers on start.
+        let kirby = await service.isCachedFlightEnabled('kirby');
+        let falco = await service.isCachedFlightEnabled('falco');
+        let fox = await service.isCachedFlightEnabled('fox');
+        let joker = await service.isCachedFlightEnabled('joker');
+        let lucario = await service.isCachedFlightEnabled('lucario');
+        let ness = await service.isCachedFlightEnabled('ness');
+        let mario = await service.isCachedFlightEnabled('mario');
+        let kingdedede = await service.isCachedFlightEnabled('kingdedede');
+
+        // validate that all the correct elements are inside the array.
+        expect(kirby).to.equal(true);
+        expect(falco).to.equal(true);
+        expect(fox).to.equal(true);
+        expect(joker).to.equal(true);
+        expect(lucario).to.equal(true);
+        expect(ness).to.equal(true);
+        expect(mario).to.equal(true);
+        expect(kingdedede).to.equal(true);
+    });
 });
 
 describe('Await initial fetch tests', () => {

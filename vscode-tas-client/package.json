@@ -2,7 +2,7 @@
   "name": "vscode-tas-client",
   "version": "0.0.0-placeholder",
   "description": "",
-  "main": "./out/index",
+  "main": "./index.js",
   "scripts": {
     "compile": "tsc -p ./",
     "eslint": "eslint src --ext ts",
@@ -44,6 +44,6 @@
     "vscode-test": "^1.4.0"
   },
   "dependencies": {
-    "tas-client": "0.1.26"
+    "tas-client": "0.1.30"
   }
 }
