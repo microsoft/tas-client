@@ -22,7 +22,6 @@ describe('Web Api Test', () => {
         storageKey: 'test_features',
         endpoint: 'https://default.exp-tas.com/vscode/ab',
         refetchInterval: 0,
-        featuresTelemetryPropertyName: 'FeaturesTelemetryName',
         assignmentContextTelemetryPropertyName: 'AssignmentContextTelemetryName',
         telemetryEventName: 'feature_queried',
     });
@@ -33,7 +32,6 @@ describe('Web Api Test', () => {
     let experimentationServiceWithoutFilters = new ExperimentationService({
         telemetry: new ExperimentationTelemetryMock(),
         endpoint: 'https://default.exp-tas.com/vscode/ab',
-        featuresTelemetryPropertyName: 'FeaturesTelemetryName',
         assignmentContextTelemetryPropertyName: 'AssignmentContextTelemetryName',
         telemetryEventName: 'event',
     });

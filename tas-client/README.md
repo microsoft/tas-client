@@ -17,7 +17,6 @@ const tasClient = new TASClient({
 			telemetry: telemetry,
 			storageKey: storageKey,
 			keyValueStorage: keyValueStorage,
-			featuresTelemetryPropertyName: '<featuresTelemetryPropertyName>',
 			assignmentContextTelemetryPropertyName: '<assignmentContextTelemetryPropertyName>',
 			telemetryEventName: '<telemetryEventName>',
 			endpoint: '<tas-endpoint>',

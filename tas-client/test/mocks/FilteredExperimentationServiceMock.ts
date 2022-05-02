@@ -20,7 +20,6 @@ export class FilteredExperimentationServiceMock extends ExperimentationServiceAu
             new ExperimentationTelemetryMock(),
             filterProviders,
             0,
-            'FeaturesTelemetryEventName',
             'AssignmentContextTelemetryEventName',
             'TelemetryName',
             'StorageKey',
@@ -40,9 +39,6 @@ export class FilteredExperimentationServiceMock extends ExperimentationServiceAu
         );
         this.addFeatureProvider(this.featureProvider);
 
-        if (this.featuresTelemetryPropertyName == null) {
-            this.featuresTelemetryPropertyName = 'MockFeaturesTelemetryProperty';
-        }
         if (this.assignmentContextTelemetryPropertyName == null) {
             this.assignmentContextTelemetryPropertyName = 'MockAssignmentContextTelemetryProperty';
         }

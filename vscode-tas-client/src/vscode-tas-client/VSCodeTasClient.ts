@@ -17,7 +17,6 @@ import TelemetryDisabledExperimentationService from './TelemetryDisabledExperime
 
 const endpoint: string = 'https://default.exp-tas.com/vscode/ab';
 const telemetryEventName = 'query-expfeature';
-const featuresTelemetryPropertyName = 'VSCode.ABExp.Features';
 const assignmentContextTelemetryPropertyName = 'abexp.assignmentcontext';
 const storageKey = 'VSCode.ABExp.FeatureData';
 const refetchInterval = 1000 * 60 * 30; // By default it's set up to 30 minutes.
@@ -64,7 +63,7 @@ export function getExperimentationService(
         telemetry: telemetry,
         storageKey: storageKey,
         keyValueStorage: keyValueStorage,
-        featuresTelemetryPropertyName: featuresTelemetryPropertyName,
+        featuresTelemetryPropertyName: '',
         assignmentContextTelemetryPropertyName: assignmentContextTelemetryPropertyName,
         telemetryEventName: telemetryEventName,
         endpoint: endpoint,

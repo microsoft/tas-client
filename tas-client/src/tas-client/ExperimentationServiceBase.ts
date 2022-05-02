@@ -39,14 +39,12 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
          * If an implementation of telemetry exists, we set the shared property.
          */
         if (this.telemetry) {
-            this.telemetry.setSharedProperty(this.featuresTelemetryPropertyName, this.features.features.join(';'));
             this.telemetry.setSharedProperty(this.assignmentContextTelemetryPropertyName, this.features.assignmentContext);
         }
     }
 
     constructor(
         protected telemetry: IExperimentationTelemetry,
-        protected featuresTelemetryPropertyName: string,
         protected assignmentContextTelemetryPropertyName: string,
         protected telemetryEventName: string,
         protected storageKey?: string,
