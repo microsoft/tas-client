@@ -18,12 +18,13 @@ export interface ExperimentationServiceConfig {
      */
     filterProviders?: IExperimentationFilterProvider[];
     /**
+     * @deprecated This property is no longer used. You can get equivalent information from the assignment context property.
      * A string containing the name for the features telemetry property.
      * This option is implemented in IExperimentation Telemetry.
      * This options posts to the implementation a list of
      * available features for the client, separated by ';'
      */
-    featuresTelemetryPropertyName: string;
+    featuresTelemetryPropertyName?: string;
     /**
      * A string containing the name for the assignment context telemetry property.
      * This option is implemented in IExperimentation Telemetry.

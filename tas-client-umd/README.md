@@ -56,7 +56,6 @@ const tasClient = new TASClient({
 			telemetry: telemetry,
 			storageKey: storageKey,
 			keyValueStorage: keyValueStorage,
-			featuresTelemetryPropertyName: '<featuresTelemetryPropertyName>',
 			assignmentContextTelemetryPropertyName: '<assignmentContextTelemetryPropertyName>',
 			telemetryEventName: '<telemetryEventName>',
 			endpoint: '<tas-endpoint>',
@@ -64,7 +63,7 @@ const tasClient = new TASClient({
 		});
 ```
 
-`featuresTelemetryPropertyName` and `assignmentContextTelemetryPropertyName` are properties that are added to every telemetry event for experimentation result calculations.
+`assignmentContextTelemetryPropertyName` is a property that is added to every telemetry event for experimentation result calculations.
 
 `telemetryEventName` is the name of the event which is posted every time experiment data is queried.
 
@@ -258,12 +257,13 @@ declare module 'tas-client-umd' {
 		 */
 		filterProviders?: IExperimentationFilterProvider[];
 		/**
+		 * @deprecated This property is no longer used. You can get equivalent information from the assignment context property.
 		 * A string containing the name for the features telemetry property.
 		 * This option is implemented in IExperimentation Telemetry.
 		 * This options posts to the implementation a list of
 		 * available features for the client, separated by ';'
 		 */
-		featuresTelemetryPropertyName: string;
+		featuresTelemetryPropertyName?: string;
 		/**
 		 * A string containing the name for the assignment context telemetry property.
 		 * This option is implemented in IExperimentation Telemetry.
@@ -304,7 +304,6 @@ declare module 'tas-client-umd' {
 	 */
 	abstract class ExperimentationServiceBase implements IExperimentationService {
 		protected telemetry: IExperimentationTelemetry;
-		protected featuresTelemetryPropertyName: string;
 		protected assignmentContextTelemetryPropertyName: string;
 		protected telemetryEventName: string;
 		protected storageKey?: string | undefined;
@@ -319,7 +318,7 @@ declare module 'tas-client-umd' {
 		private _features;
 		private get features();
 		private set features(value);
-		constructor(telemetry: IExperimentationTelemetry, featuresTelemetryPropertyName: string, assignmentContextTelemetryPropertyName: string, telemetryEventName: string, storageKey?: string | undefined, storage?: IKeyValueStorage | undefined);
+		constructor(telemetry: IExperimentationTelemetry, assignmentContextTelemetryPropertyName: string, telemetryEventName: string, storageKey?: string | undefined, storage?: IKeyValueStorage | undefined);
 		/**
 		 * Gets all the features from the provider sources (not cache).
 		 * It returns these features and will also update the providers to have the latest features cached.
@@ -396,13 +395,12 @@ declare module 'tas-client-umd' {
 		protected telemetry: IExperimentationTelemetry;
 		protected filterProviders: IExperimentationFilterProvider[];
 		protected refreshRateMs: number;
-		protected featuresTelemetryPropertyName: string;
 		protected assignmentContextTelemetryPropertyName: string;
 		protected telemetryEventName: string;
 		protected storageKey?: string | undefined;
 		protected storage?: IKeyValueStorage | undefined;
 		private pollingService?;
-		constructor(telemetry: IExperimentationTelemetry, filterProviders: IExperimentationFilterProvider[], refreshRateMs: number, featuresTelemetryPropertyName: string, assignmentContextTelemetryPropertyName: string, telemetryEventName: string, storageKey?: string | undefined, storage?: IKeyValueStorage | undefined);
+		constructor(telemetry: IExperimentationTelemetry, filterProviders: IExperimentationFilterProvider[], refreshRateMs: number, assignmentContextTelemetryPropertyName: string, telemetryEventName: string, storageKey?: string | undefined, storage?: IKeyValueStorage | undefined);
 		protected init(): void;
 		/**
 		 * Wrapper that will reset the polling intervals whenever the feature data is fetched manually.

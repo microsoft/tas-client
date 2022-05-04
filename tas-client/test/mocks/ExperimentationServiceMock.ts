@@ -25,7 +25,6 @@ export class ExperimentationServiceMock extends ExperimentationServiceAutoPollin
             experimentationTelemetry || new ExperimentationTelemetryMock(),
             [new ExperimentationFilterProviderMock()],
             pollingInterval,
-            'FeaturesTelemetryEventName',
             'AssignmentContextTelemetryEventName',
             'TelemetryName',
             'StorageKey',
@@ -41,9 +40,6 @@ export class ExperimentationServiceMock extends ExperimentationServiceAutoPollin
             );
         }
 
-        if (this.featuresTelemetryPropertyName == null) {
-            this.featuresTelemetryPropertyName = 'MockFeaturesTelemetryProperty';
-        }
         if (this.assignmentContextTelemetryPropertyName == null) {
             this.assignmentContextTelemetryPropertyName = 'MockAssignmentContextTelemetryProperty';
         }

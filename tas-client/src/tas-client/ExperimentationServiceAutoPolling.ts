@@ -20,13 +20,12 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         protected telemetry: IExperimentationTelemetry,
         protected filterProviders: IExperimentationFilterProvider[],
         protected refreshRateMs: number,
-        protected featuresTelemetryPropertyName: string,
         protected assignmentContextTelemetryPropertyName: string,
         protected telemetryEventName: string,
         protected storageKey?: string,
         protected storage?: IKeyValueStorage,
     ) {
-        super(telemetry, featuresTelemetryPropertyName, assignmentContextTelemetryPropertyName, telemetryEventName, storageKey, storage);
+        super(telemetry, assignmentContextTelemetryPropertyName, telemetryEventName, storageKey, storage);
         // Excluding 0 since it allows to turn off the auto polling.
         if (refreshRateMs < 1000 && refreshRateMs !== 0) {
             throw new Error(
