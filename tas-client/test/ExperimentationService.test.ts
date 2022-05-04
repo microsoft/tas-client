@@ -304,7 +304,7 @@ describe('Get features from multiple providers that differ in polling intervals 
     // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco']
     it('should automatically refetch the third result and update cache.', async () => {
         await new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 1200); // 1200 ms, because it takes 1000 ms to do the polling, and 200ms to complete the fetch.
+            setTimeout(() => resolve(), 1500); // 1200 ms, because it takes 1000 ms to do the polling, and 200ms to complete the fetch, + 300ms buffer.
         });
 
         let features = await storage.getValue<FeatureData>('StorageKey');
@@ -408,13 +408,13 @@ describe('Telemetry tests', () => {
     it('Shared properties should be set on isCachedFlightEnabled', async () => {
         const experimentationTelemetryMock = new ExperimentationTelemetryMock();
         const keyValueStorageMock = new KeyValueStorageMock();
-        keyValueStorageMock.setValue<FeatureData>('StorageKey', { features: ['testFlight'], assignmentContext: '', configs: [] });
+        keyValueStorageMock.setValue<FeatureData>('StorageKey', { features: ['testFlight'], assignmentContext: 'tf', configs: [] });
         const service = new ExperimentationServiceMock([], [], 10000, experimentationTelemetryMock, keyValueStorageMock);
 
         await service.isCachedFlightEnabled('testFlight');
 
-        expect('testFlight').to.equal(experimentationTelemetryMock.sharedProperties.get('FeaturesTelemetryEventName'));
-        expect('testFlight').to.equal(experimentationTelemetryMock.postedEvents[0].sharedProperties.get('FeaturesTelemetryEventName'));
+        expect('tf').to.equal(experimentationTelemetryMock.sharedProperties.get('AssignmentContextTelemetryEventName'));
+        expect('tf').to.equal(experimentationTelemetryMock.postedEvents[0].sharedProperties.get('AssignmentContextTelemetryEventName'));
     });
 });
 
