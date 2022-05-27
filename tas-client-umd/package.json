@@ -1,6 +1,6 @@
 {
     "name": "tas-client-umd",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "description": "TAS-Client as UMD module",
     "main": "lib/tas-client-umd.js",
     "typings": "tas-client-umd.d.ts",
