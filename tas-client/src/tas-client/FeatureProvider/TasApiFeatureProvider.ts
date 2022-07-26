@@ -38,7 +38,47 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         }
 
         //axios webservice call.
-        let response: AxiosResponse<TASFeatureData> = await this.httpClient.get({ headers: headers });
+        let response: AxiosResponse<TASFeatureData> | undefined;
+
+        
+        try {
+            /**
+             * As mentioned in the axios docs:
+             * Axios Promise will handle handle the catch
+             * section of promises whenever a request is not succesful.
+             * https://axios-http.com/docs/handling_errors
+             */
+            response = await this.httpClient.get({ headers: headers });
+        } catch(error: any) {
+            const properties: Map<string, string> = new Map();
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                properties.set("RESPONSE_DATA", error.response.data);
+                properties.set("RESPONSE_STATUS", error.response.status);
+                properties.set("RESPONSE_HEADERS", error.response.headers);
+              } else if (error.request) {
+                // The request was made but no response was received
+                // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                // http.ClientRequest in node.js
+                properties.set("ERROR_REQUEST", JSON.stringify(error.request));
+              } else {
+                // Something happened in setting up the request that triggered an Error
+                properties.set("ERROR_MESSAGE", error.message);
+              }
+              properties.set("ERROR_CONFIG", JSON.stringify(error.config));
+              this.telemetry.postEvent("tasApiFetchError", properties);
+        }
+
+        // In case the response fetchin failed, return 
+        // default feature data.
+        if (!response){
+            return {
+                features: [],
+                assignmentContext: '',
+                configs: []
+            };
+        }
 
         // If we have at least one filter, we post it to telemetry event.
         if (filters.keys.length > 0) {
@@ -47,7 +87,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
 
 
         // Read the response data from the server.
-        let responseData = response.data;
+        let responseData = response!.data;
         let configs = responseData.Configs;
         let features: string[] = [];
         for (let c of configs) {
