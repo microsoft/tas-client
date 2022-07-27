@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider';
-import { AxiosResponse } from 'axios';
+import { AxiosResponse, AxiosError } from 'axios';
 import { AxiosHttpClient } from '../Util/AxiosHttpClient';
 import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry';
 import { FilteredFeatureProvider } from './FilteredFeatureProvider';
@@ -49,25 +49,26 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
              * https://axios-http.com/docs/handling_errors
              */
             response = await this.httpClient.get({ headers: headers });
-        } catch(error: any) {
+        } catch(error) {
+            const axiosError = error as AxiosError;
             const properties: Map<string, string> = new Map();
-            if (error.response) {
+            if (axiosError.response) {
                 // The request was made and the server responded with a status code
                 // that falls out of the range of 2xx
-                properties.set("RESPONSE_DATA", error.response.data);
-                properties.set("RESPONSE_STATUS", error.response.status);
-                properties.set("RESPONSE_HEADERS", error.response.headers);
-              } else if (error.request) {
+                properties.set("RESPONSE_DATA", axiosError.response.data);
+                properties.set("RESPONSE_STATUS", `${axiosError.response.status}`);
+                properties.set("RESPONSE_HEADERS", `${axiosError.response.headers}`);
+            } else if (axiosError.request) {
                 // The request was made but no response was received
                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
                 // http.ClientRequest in node.js
-                properties.set("ERROR_REQUEST", JSON.stringify(error.request));
-              } else {
+                properties.set("ERROR_REQUEST", JSON.stringify(axiosError.request));
+            } else {
                 // Something happened in setting up the request that triggered an Error
-                properties.set("ERROR_MESSAGE", error.message);
-              }
-              properties.set("ERROR_CONFIG", JSON.stringify(error.config));
-              this.telemetry.postEvent("tasApiFetchError", properties);
+                properties.set("ERROR_MESSAGE", axiosError.message);
+            }
+            properties.set("ERROR_CONFIG", JSON.stringify(axiosError.config));
+            this.telemetry.postEvent("tasApiFetchError", properties);
         }
 
         // In case the response fetchin failed, return 
