@@ -91,20 +91,21 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             });
         }
 
-        /**
-         * Fetch all from providers.
-         */
-        this.fetchPromise = Promise.all(
-            this.featureProviders.map(async (provider) => {
-                return await provider.getFeatures();
-            }),
-        );
+ 
 
         try {
+            /**
+             * Fetch all from providers.
+             */
+            this.fetchPromise = Promise.all(
+                this.featureProviders.map(async (provider) => {
+                    return await provider.getFeatures();
+                }),
+            );
             const featureResults = await this.fetchPromise;
             this.updateFeatures(featureResults, overrideInMemoryFeatures);
         } catch {
-            // Fetching features threw. Can happen if not connected to the internet, e.g.
+            // Fetching features threw error. Can happen if not connected to the internet, e.g.
         }
         
         this.fetchPromise = undefined;

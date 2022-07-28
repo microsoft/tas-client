@@ -55,30 +55,23 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
             if (axiosError.response) {
                 // The request was made and the server responded with a status code
                 // that falls out of the range of 2xx
-                properties.set("RESPONSE_DATA", axiosError.response.data);
-                properties.set("RESPONSE_STATUS", `${axiosError.response.status}`);
-                properties.set("RESPONSE_HEADERS", `${axiosError.response.headers}`);
+                properties.set("ErrorType", "ServerError");
             } else if (axiosError.request) {
                 // The request was made but no response was received
                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
                 // http.ClientRequest in node.js
-                properties.set("ERROR_REQUEST", JSON.stringify(axiosError.request));
+                properties.set("ErrorType", "NoResponse");
             } else {
                 // Something happened in setting up the request that triggered an Error
-                properties.set("ERROR_MESSAGE", axiosError.message);
+                properties.set("ErrorType", "GenericError");
             }
-            properties.set("ERROR_CONFIG", JSON.stringify(axiosError.config));
             this.telemetry.postEvent("tasApiFetchError", properties);
         }
 
-        // In case the response fetchin failed, return 
-        // default feature data.
-        if (!response){
-            return {
-                features: [],
-                assignmentContext: '',
-                configs: []
-            };
+        // In case the response fetching failed, throw
+        // exception so that the caller exits.
+        if (!response) {
+            throw Error("tasApiFetchError");
         }
 
         // If we have at least one filter, we post it to telemetry event.
