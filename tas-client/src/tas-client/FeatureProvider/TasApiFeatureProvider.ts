@@ -49,7 +49,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
              * https://axios-http.com/docs/handling_errors
              */
             response = await this.httpClient.get({ headers: headers });
-        } catch(error) {
+        } catch (error) {
             const axiosError = error as AxiosError;
             const properties: Map<string, string> = new Map();
             if (axiosError.response) {
