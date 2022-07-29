@@ -91,8 +91,6 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             });
         }
 
- 
-
         try {
             /**
              * Fetch all from providers.

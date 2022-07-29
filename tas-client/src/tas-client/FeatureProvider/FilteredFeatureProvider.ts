@@ -17,7 +17,7 @@ export abstract class FilteredFeatureProvider extends BaseFeatureProvider {
     ) {
         super(telemetry);
     }
-    
+
     private cachedTelemetryEvents: any[] = [];
 
     protected getFilters(): Map<string, any> {
