@@ -10,7 +10,8 @@ import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelem
 import { FilteredFeatureProvider } from './FilteredFeatureProvider';
 import { FeatureData, ConfigData } from './IFeatureProvider';
 
-export const TASAPI_FETCHERROR_EVENTNAME = 'tasApiFetchError';
+export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
+const ErrorType = "ErrorType";
 /**
  * Feature provider implementation that calls the TAS web service to get the most recent active features.
  */
@@ -55,15 +56,15 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
             if (axiosError.response) {
                 // The request was made and the server responded with a status code
                 // that falls out of the range of 2xx
-                properties.set('ErrorType', 'ServerError');
+                properties.set(ErrorType, 'ServerError');
             } else if (axiosError.request) {
                 // The request was made but no response was received
                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
                 // http.ClientRequest in node.js
-                properties.set('ErrorType', 'NoResponse');
+                properties.set(ErrorType, 'NoResponse');
             } else {
                 // Something happened in setting up the request that triggered an Error
-                properties.set('ErrorType', 'GenericError');
+                properties.set(ErrorType, 'GenericError');
             }
             this.telemetry.postEvent(TASAPI_FETCHERROR_EVENTNAME, properties);
         }

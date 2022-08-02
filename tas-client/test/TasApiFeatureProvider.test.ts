@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AxiosError, AxiosPromise, AxiosResponse } from 'axios';
-import { IExperimentationTelemetry } from 'src';
+import { AxiosError, AxiosResponse } from 'axios';
+import { IExperimentationTelemetry } from '../src/contracts/IExperimentationTelemetry';
 import {
     TasApiFeatureProvider,
     TASAPI_FETCHERROR_EVENTNAME,
