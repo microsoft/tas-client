@@ -44,6 +44,6 @@
     "vscode-test": "^1.4.0"
   },
   "dependencies": {
-    "tas-client": "0.1.45"
+    "tas-client": "0.1.58"
   }
 }
