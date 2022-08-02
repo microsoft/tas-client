@@ -15,7 +15,7 @@ export interface Parameters {
 export interface FeatureData {
     features: string[];
     assignmentContext: string;
-    configs: ConfigData[]; 
+    configs: ConfigData[];
 }
 
 export interface IFeatureProvider {

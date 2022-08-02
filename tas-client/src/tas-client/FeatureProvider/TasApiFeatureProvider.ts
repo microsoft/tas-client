@@ -4,12 +4,14 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider';
-import { AxiosResponse } from 'axios';
+import { AxiosResponse, AxiosError } from 'axios';
 import { AxiosHttpClient } from '../Util/AxiosHttpClient';
 import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry';
 import { FilteredFeatureProvider } from './FilteredFeatureProvider';
 import { FeatureData, ConfigData } from './IFeatureProvider';
 
+export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
+const ErrorType = 'ErrorType';
 /**
  * Feature provider implementation that calls the TAS web service to get the most recent active features.
  */
@@ -38,16 +40,48 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         }
 
         //axios webservice call.
-        let response: AxiosResponse<TASFeatureData> = await this.httpClient.get({ headers: headers });
+        let response: AxiosResponse<TASFeatureData> | undefined;
+
+        try {
+            /**
+             * As mentioned in the axios docs:
+             * Axios Promise will handle handle the catch
+             * section of promises whenever a request is not succesful.
+             * https://axios-http.com/docs/handling_errors
+             */
+            response = await this.httpClient.get({ headers: headers });
+        } catch (error) {
+            const axiosError = error as AxiosError;
+            const properties: Map<string, string> = new Map();
+            if (axiosError.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                properties.set(ErrorType, 'ServerError');
+            } else if (axiosError.request) {
+                // The request was made but no response was received
+                // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+                // http.ClientRequest in node.js
+                properties.set(ErrorType, 'NoResponse');
+            } else {
+                // Something happened in setting up the request that triggered an Error
+                properties.set(ErrorType, 'GenericError');
+            }
+            this.telemetry.postEvent(TASAPI_FETCHERROR_EVENTNAME, properties);
+        }
+
+        // In case the response fetching failed, throw
+        // exception so that the caller exits.
+        if (!response) {
+            throw Error(TASAPI_FETCHERROR_EVENTNAME);
+        }
 
         // If we have at least one filter, we post it to telemetry event.
         if (filters.keys.length > 0) {
             this.PostEventToTelemetry(headers);
         }
 
-
         // Read the response data from the server.
-        let responseData = response.data;
+        let responseData = response!.data;
         let configs = responseData.Configs;
         let features: string[] = [];
         for (let c of configs) {
@@ -66,7 +100,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         return {
             features,
             assignmentContext: responseData.AssignmentContext,
-            configs
+            configs,
         };
     }
 }
