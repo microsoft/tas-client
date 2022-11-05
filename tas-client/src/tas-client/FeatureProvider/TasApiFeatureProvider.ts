@@ -12,6 +12,7 @@ import { FeatureData, ConfigData } from './IFeatureProvider';
 
 export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
 const ErrorType = 'ErrorType';
+const ErrorMessage = 'ErrorMessage';
 /**
  * Feature provider implementation that calls the TAS web service to get the most recent active features.
  */
@@ -62,6 +63,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
                 // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
                 // http.ClientRequest in node.js
                 properties.set(ErrorType, 'NoResponse');
+                properties.set(ErrorMessage, axiosError.message);
             } else {
                 // Something happened in setting up the request that triggered an Error
                 properties.set(ErrorType, 'GenericError');
