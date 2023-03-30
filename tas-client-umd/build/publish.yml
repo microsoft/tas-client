@@ -25,8 +25,10 @@ extends:
 
         buildSteps:
           - script: npm ci
+            workingDirectory: $(Build.SourcesDirectory)/tas-client-umd
             displayName: Install dependencies
           - pwsh: Copy-Item -Recurse -Path ./node_modules/tas-client/ -Destination ./lib/ -Filter *.d.ts
+            workingDirectory: $(Build.SourcesDirectory)/tas-client-umd
             displayName: Grab typings from non-UMD package
 
         publishPackage: ${{ parameters.publishPackage }}
