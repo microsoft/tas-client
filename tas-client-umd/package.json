@@ -1,13 +1,12 @@
 {
     "name": "tas-client-umd",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "description": "TAS-Client as UMD module",
     "main": "lib/tas-client-umd.js",
     "typings": "lib/index.d.ts",
     "scripts": {
         "build": "webpack",
-        "prepublish": "webpack",
-        "typings": "Copy-Item -Recurse -Path ./node_modules/tas-client/ -Destination ./lib/ -Filter *.d.ts"
+        "prepack": "webpack"
     },
     "keywords": [
         "tas-client",
