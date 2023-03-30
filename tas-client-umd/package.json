@@ -1,12 +1,13 @@
 {
     "name": "tas-client-umd",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "description": "TAS-Client as UMD module",
     "main": "lib/tas-client-umd.js",
-    "typings": "tas-client-umd.d.ts",
+    "typings": "lib/index.d.ts",
     "scripts": {
         "build": "webpack",
-        "prepublish": "webpack"
+        "prepublish": "webpack",
+        "typings": "Copy-Item -Recurse -Path ./node_modules/tas-client/ -Destination ./lib/ -Filter *.d.ts"
     },
     "keywords": [
         "tas-client",
@@ -15,7 +16,7 @@
     "author": "Microsoft",
     "license": "MIT",
     "devDependencies": {
-        "tas-client": "0.1.26",
+        "tas-client": "0.1.58",
         "webpack": "^4.16.5",
         "webpack-cli": "^3.1.0"
     }
