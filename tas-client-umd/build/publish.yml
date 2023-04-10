@@ -32,3 +32,4 @@ extends:
             displayName: Grab typings from non-UMD package
 
         publishPackage: ${{ parameters.publishPackage }}
+        workingDirectory: $(Build.SourcesDirectory)/tas-client-umd
