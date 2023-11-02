@@ -34,7 +34,7 @@
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
     "gulp": "^4.0.2",
-    "mocha": "^8.0.1",
+    "mocha": "^10.2.0",
     "nerdbank-gitversioning": "^3.3.37",
     "prettier": "^1.18.2",
     "source-map-support": "^0.5.16",
