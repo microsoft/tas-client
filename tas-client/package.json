@@ -38,7 +38,7 @@
     "tslint": "^5.17.0",
     "tslint-microsoft-contrib": "^6.2.0",
     "typemoq": "2.1.0",
-    "typescript": "^3.7.2"
+    "typescript": "^5.2.2"
   },
   "dependencies": {
     "axios": "^1.6.1"
