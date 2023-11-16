@@ -3,38 +3,37 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AxiosError, AxiosResponse } from 'axios';
 import { IExperimentationTelemetry } from '../src/contracts/IExperimentationTelemetry';
 import {
     TasApiFeatureProvider,
     TASAPI_FETCHERROR_EVENTNAME,
 } from '../src/tas-client/FeatureProvider/TasApiFeatureProvider';
-import { AxiosHttpClient } from '../src/tas-client/Util/AxiosHttpClient';
+import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient';
 import { It, Mock, Times } from 'typemoq';
 import { expect } from 'chai';
 
 describe('TAS Api Feature Provider Tests', () => {
     it('Should NOT send telemetry when no error ocurred.', async () => {
         // init
-        const axios = Mock.ofType<AxiosHttpClient>();
+        const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const axiosResponse = Mock.ofType<AxiosResponse<any>>();
+        const fetchResponse = Mock.ofType<FetchResult>();
         const responseData = { Configs: [], AssignmentContext: 'test' };
 
         // setup
 
         // NOTE: We need to add this in order to be able to return this object
         // within a promise.
-        axiosResponse.setup((a: any) => a.then).returns(() => undefined);
+        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
 
-        // 1) Setup dummy axios response to be able to return data.Configs as it's needed
+        // 1) Setup dummy response to be able to return data.Configs as it's needed
         // for a succesful run.
-        axiosResponse.setup((a) => a.data).returns(() => responseData);
+        fetchResponse.setup((a) => a.data).returns(() => responseData);
 
-        // 2) Return resolved axios response to simulate succesful call.
-        axios
+        // 2) Return resolved response to simulate succesful call.
+        httpClient
             .setup((a) => a.get(It.isAny()))
-            .returns(() => Promise.resolve(axiosResponse.object))
+            .returns(() => Promise.resolve(fetchResponse.object))
             .verifiable(Times.once());
 
         // 3) Telemetry should not be called.
@@ -43,28 +42,25 @@ describe('TAS Api Feature Provider Tests', () => {
             .verifiable(Times.never());
 
         // execute
-        const tasApiProvider = new TasApiFeatureProvider(axios.object, telemetry.object, []);
+        const tasApiProvider = new TasApiFeatureProvider(httpClient.object, telemetry.object, []);
         await tasApiProvider.fetch();
 
         // verify
-        axios.verifyAll();
+        httpClient.verifyAll();
         telemetry.verifyAll();
     });
 
     it('Should send telemetry of type ServerError when error was return from the server.', async () => {
         // init
-        const axios = Mock.ofType<AxiosHttpClient>();
+        const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const axiosError = Mock.ofType<AxiosError<any>>();
-        // We need to add this in order to be able to return this object
-        // within a promise.
-        axiosError.setup((a: any) => a.then).returns(() => undefined);
+        const fetchError = new FetchError('ServerError', true, false);
 
         // setup
         // 1) Return reject response to simulate unsuccessfull call.
-        axios
+        httpClient
             .setup((a) => a.get(It.isAny()))
-            .returns(() => Promise.reject(axiosError.object))
+            .returns(() => Promise.reject(fetchError))
             .verifiable(Times.once());
 
         // 2) Telemetry should be called with the right event.
@@ -79,7 +75,7 @@ describe('TAS Api Feature Provider Tests', () => {
             .verifiable(Times.once());
 
         // execute
-        const tasApiProvider = new TasApiFeatureProvider(axios.object, telemetry.object, []);
+        const tasApiProvider = new TasApiFeatureProvider(httpClient.object, telemetry.object, []);
         let exceptionThrown = false;
         try {
             await tasApiProvider.fetch();
@@ -89,7 +85,7 @@ describe('TAS Api Feature Provider Tests', () => {
             expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
-        axios.verifyAll();
+        httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
         expect(exceptionThrown).to.equal(true);
@@ -97,21 +93,15 @@ describe('TAS Api Feature Provider Tests', () => {
 
     it('Should send telemetry of type NoResponse when no response was returned from the server but a request exists.', async () => {
         // init
-        const axios = Mock.ofType<AxiosHttpClient>();
+        const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const axiosError = Mock.ofType<AxiosError<any>>();
-
-        // We need to add this in order to be able to return this object
-        // within a promise.
-        axiosError.setup((a: any) => a.then).returns(() => undefined);
-        // Setup undefined response, so that we use request instead.
-        axiosError.setup((e) => e.response).returns(() => undefined);
+        const fetchError = new FetchError('NoResponse', false);
 
         // setup
         // 1) Return reject response to simulate unsuccessfull call.
-        axios
+        httpClient
             .setup((a) => a.get(It.isAny()))
-            .returns(() => Promise.reject(axiosError.object))
+            .returns(() => Promise.reject(fetchError))
             .verifiable(Times.once());
 
         // 2) Telemetry should be called with the right event.
@@ -126,7 +116,7 @@ describe('TAS Api Feature Provider Tests', () => {
             .verifiable(Times.once());
 
         // execute
-        const tasApiProvider = new TasApiFeatureProvider(axios.object, telemetry.object, []);
+        const tasApiProvider = new TasApiFeatureProvider(httpClient.object, telemetry.object, []);
         let exceptionThrown = false;
         try {
             await tasApiProvider.fetch();
@@ -136,7 +126,7 @@ describe('TAS Api Feature Provider Tests', () => {
             expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
-        axios.verifyAll();
+        httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
         expect(exceptionThrown).to.equal(true);
@@ -144,21 +134,21 @@ describe('TAS Api Feature Provider Tests', () => {
 
     it('Should send telemetry of type GenericError when no request or response was available in the response.', async () => {
         // init
-        const axios = Mock.ofType<AxiosHttpClient>();
+        const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const axiosError = Mock.ofType<AxiosError<any>>();
+        const fetchError = Mock.ofType<FetchError>();
         // We need to add this in order to be able to return this object
         // within a promise.
-        axiosError.setup((a: any) => a.then).returns(() => undefined);
+        fetchError.setup((a: any) => a.then).returns(() => undefined);
         // Setup undefined response and undefined request, so that error is interpreted as generic.
-        axiosError.setup((e) => e.response).returns(() => undefined);
-        axiosError.setup((e) => e.request).returns(() => undefined);
+        fetchError.setup((e) => e.responseOk).returns(() => undefined);
+        fetchError.setup((e) => e.responseReceived).returns(() => undefined);
 
         // setup
         // 1) Return reject response to simulate unsuccessfull call.
-        axios
+        httpClient
             .setup((a) => a.get(It.isAny()))
-            .returns(() => Promise.reject(axiosError.object))
+            .returns(() => Promise.reject(fetchError.object))
             .verifiable(Times.once());
 
         // 2) Telemetry should be called with the right event.
@@ -173,7 +163,7 @@ describe('TAS Api Feature Provider Tests', () => {
             .verifiable(Times.once());
 
         // execute
-        const tasApiProvider = new TasApiFeatureProvider(axios.object, telemetry.object, []);
+        const tasApiProvider = new TasApiFeatureProvider(httpClient.object, telemetry.object, []);
         let exceptionThrown = false;
         try {
             await tasApiProvider.fetch();
@@ -183,7 +173,7 @@ describe('TAS Api Feature Provider Tests', () => {
             expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
-        axios.verifyAll();
+        httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
         expect(exceptionThrown).to.equal(true);
