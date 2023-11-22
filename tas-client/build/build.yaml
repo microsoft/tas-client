@@ -11,8 +11,8 @@ steps:
   workingDirectory: './tas-client'
   displayName: 'npm install'
 
-- script: gulp test-pack-publish
-  displayName: 'gulp test-pack-publish'
+- script: npm run test-publish
+  displayName: 'Build package'
   workingDirectory: './tas-client'
 
 - task: PublishBuildArtifacts@1
