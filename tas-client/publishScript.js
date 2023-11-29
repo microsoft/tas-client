@@ -41,15 +41,10 @@ async function compileTask() {
 
 async function copyPackageContents() {
     const sourceFile = packageJsonFile;
-    mkdirp(packageDir);
-    const destinationFile = path.join(packageDir, 'package.json');
-    fs.copyFile(sourceFile, destinationFile, (err) => {
-        if (err) {
-            console.error('Error occurred while copying package.json:', err);
-        } else {
-            console.log('package.json copied successfully to outDir');
-        }
-    });
+    await util.promisify(fs.mkdir)(packageDir, { recursive: true });
+    const destinationFile = path.join(outDir, 'package.json');
+    await util.promisify(fs.copyFile)(sourceFile, destinationFile);
+    console.log('package.json copied successfully to outDir');
 }
 
 function setPackageVersion() {
