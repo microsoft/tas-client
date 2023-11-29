@@ -4,20 +4,19 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider';
-import { AxiosResponse, AxiosError } from 'axios';
-import { AxiosHttpClient } from '../Util/AxiosHttpClient';
+import { FetchError, FetchResult, HttpClient } from '../Util/HttpClient';
 import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry';
 import { FilteredFeatureProvider } from './FilteredFeatureProvider';
 import { FeatureData, ConfigData } from './IFeatureProvider';
 
 export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
-const ErrorType = 'ErrorType';
+const ERROR_TYPE = 'ErrorType';
 /**
  * Feature provider implementation that calls the TAS web service to get the most recent active features.
  */
 export class TasApiFeatureProvider extends FilteredFeatureProvider {
     constructor(
-        protected httpClient: AxiosHttpClient,
+        protected httpClient: HttpClient,
         protected telemetry: IExperimentationTelemetry,
         protected filterProviders: IExperimentationFilterProvider[],
     ) {
@@ -33,38 +32,30 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         let headers: any = {};
 
         // Filters are handled using Map<string,any> therefore we need to
-        // convert these filters into something axios can take as headers.
+        // convert these filters into something fetch can take as headers.
         for (let key of filters.keys()) {
             const filterValue = filters.get(key);
             headers[key] = filterValue;
         }
 
-        //axios webservice call.
-        let response: AxiosResponse<TASFeatureData> | undefined;
+        //webservice call
+        let response: FetchResult | undefined;
 
         try {
-            /**
-             * As mentioned in the axios docs:
-             * Axios Promise will handle handle the catch
-             * section of promises whenever a request is not succesful.
-             * https://axios-http.com/docs/handling_errors
-             */
             response = await this.httpClient.get({ headers: headers });
         } catch (error) {
-            const axiosError = error as AxiosError;
+            const fetchError = error as FetchError;
             const properties: Map<string, string> = new Map();
-            if (axiosError.response) {
+            if (fetchError.responseReceived && !fetchError.responseOk) {
                 // The request was made and the server responded with a status code
                 // that falls out of the range of 2xx
-                properties.set(ErrorType, 'ServerError');
-            } else if (axiosError.request) {
+                properties.set(ERROR_TYPE, 'ServerError');
+            } else if (fetchError.responseReceived === false) {
                 // The request was made but no response was received
-                // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-                // http.ClientRequest in node.js
-                properties.set(ErrorType, 'NoResponse');
+                properties.set(ERROR_TYPE, 'NoResponse');
             } else {
                 // Something happened in setting up the request that triggered an Error
-                properties.set(ErrorType, 'GenericError');
+                properties.set(ERROR_TYPE, 'GenericError');
             }
             this.telemetry.postEvent(TASAPI_FETCHERROR_EVENTNAME, properties);
         }
@@ -81,7 +72,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         }
 
         // Read the response data from the server.
-        let responseData = response!.data;
+        const responseData = response.data;
         let configs = responseData.Configs;
         let features: string[] = [];
         for (let c of configs) {

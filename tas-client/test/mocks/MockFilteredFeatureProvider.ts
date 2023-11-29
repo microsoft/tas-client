@@ -13,7 +13,7 @@ export class MockFilteredFeatureProvider extends FilteredFeatureProvider {
         const headers: any = {};
 
         // Filters are handled using Map<string,any> therefore we need to
-        // convert these filters into something axios can take as headers.
+        // convert these filters into something fetch can take as headers.
         for (let key of filters.keys()) {
             const filterValue = filters.get(key);
             headers[key] = filterValue;

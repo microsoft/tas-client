@@ -5,7 +5,7 @@
 
 import { IFeatureProvider } from './FeatureProvider/IFeatureProvider';
 import { TasApiFeatureProvider } from './FeatureProvider/TasApiFeatureProvider';
-import { AxiosHttpClient } from './Util/AxiosHttpClient';
+import { HttpClient } from './Util/HttpClient';
 import { ExperimentationServiceConfig } from '../contracts/ExperimentationServiceConfig';
 import { ExperimentationServiceAutoPolling } from './ExperimentationServiceAutoPolling';
 
@@ -43,7 +43,7 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
         // Add WebApi feature provider.
         this.addFeatureProvider(
             new TasApiFeatureProvider(
-                new AxiosHttpClient(this.options.endpoint),
+                new HttpClient(this.options.endpoint),
                 this.telemetry,
                 this.filterProviders,
             ),
