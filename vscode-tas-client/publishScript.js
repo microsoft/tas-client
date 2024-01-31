@@ -45,12 +45,12 @@ async function copyPackageContents() {
     const destinationFile = path.join(outDir, 'package.json');
     await util.promisify(fs.copyFile)(sourceFile, destinationFile);
     console.log('package.json copied successfully to outDir');
-    // Also ocopy the package-lock.json file if it exists
-    const packageLockFile = path.join(__dirname, 'package-lock.json');
-    if (fs.existsSync(packageLockFile)) {
-        const destinationLockFile = path.join(outDir, 'package-lock.json');
-        await util.promisify(fs.copyFile)(packageLockFile, destinationLockFile);
-        console.log('package-lock.json copied successfully to outDir');
+    // Also copy .npmignore file if it exists
+    const npmIgnoreFile = path.join(__dirname, '.npmignore');
+    if (fs.existsSync(npmIgnoreFile)) {
+        const destinationIgnoreFile = path.join(outDir, '.npmignore');
+        await util.promisify(fs.copyFile)(npmIgnoreFile, destinationIgnoreFile);
+        console.log('.npmignore copied successfully to outDir');
     }
 }
 
