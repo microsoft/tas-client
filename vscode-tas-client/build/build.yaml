@@ -4,15 +4,15 @@ pool:
 steps:
 - task: NodeTool@0
   inputs:
-    versionSpec: '16.x'
+    versionSpec: '18.x'
   displayName: 'Install Node.js'
 
 - script: npm install
   workingDirectory: './vscode-tas-client'
   displayName: 'npm install'
 
-- script: gulp test-pack-publish
-  displayName: 'gulp test-pack-publish'
+- script: npm run test-publish
+  displayName: 'Test Publish'
   workingDirectory: './vscode-tas-client'
 
 - task: PublishBuildArtifacts@1
