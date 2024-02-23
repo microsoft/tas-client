@@ -8,8 +8,8 @@ extends:
   template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
     pool:
-      name: Azure-Pipelines-1ESPT-ExDShared
-      image: windows-2022
+      name: AzurePipelines-EO
+      image: AzurePipelinesWindows2022compliantGPT
       os: windows
     stages:
     - stage: stage
