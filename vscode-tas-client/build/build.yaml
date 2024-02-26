@@ -11,7 +11,7 @@ extends:
       skipBuildTagsForGitHubPullRequests: true
     pool:
       name: AzurePipelines-EO
-      image: AzurePipelinesWindows2022compliantGPT
+      image: 1ESPT-Windows2022
       os: windows
     stages:
     - stage: stage
