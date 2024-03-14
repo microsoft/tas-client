@@ -16,7 +16,7 @@
     "license": "MIT",
     "devDependencies": {
         "tas-client": "0.1.58",
-        "webpack": "^4.16.5",
-        "webpack-cli": "^3.1.0"
+        "webpack": "^5.90.3",
+        "webpack-cli": "^5.1.4"
     }
 }
