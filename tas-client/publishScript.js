@@ -1,7 +1,6 @@
 const cp = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const nbgv = require('nerdbank-gitversioning');
 const util = require('util');
 
 const outDir = './out/src';
@@ -47,29 +46,19 @@ async function copyPackageContents() {
     console.log('package.json copied successfully to outDir');
 }
 
-function setPackageVersion() {
-    return nbgv.setPackageVersion(outDir, '.');
-}
-
 async function packTask() {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonFile));
 
     await executeCommand(outDir, `npm pack`);
     mkdirp(packageDir);
 
-    const packageFileName = getPackageFileName(
-        packageJson,
-        (await nbgv.getVersion(outDir)).npmPackageVersion,
-    );
+    const packageFileName = getPackageFileName(packageJson, packageJson.version);
     fs.renameSync(path.join(outDir, packageFileName), path.join(packageDir, packageFileName));
 }
 
 async function publishTask() {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonFile));
-    const packageFileName = getPackageFileName(
-        packageJson,
-        (await nbgv.getVersion(outDir)).npmPackageVersion,
-    );
+    const packageFileName = getPackageFileName(packageJson, packageJson.version);
     const packageFilePath = path.join(packageDir, packageFileName);
     const publishCommand = `npm publish "${packageFilePath}"`;
     await executeCommand(__dirname, publishCommand);
@@ -80,7 +69,6 @@ async function main() {
     if (args.includes('--test') || args.includes('--publish')) {
         await compileTask();
         await copyPackageContents();
-        await setPackageVersion();
         await packTask();
     } else {
         console.log('Invalid argument. Please use either --test or --publish');

@@ -1,6 +1,6 @@
 {
   "name": "tas-client",
-  "version": "0.0.0-placeholder",
+  "version": "0.2.37",
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
   "main": "./index.js",
   "scripts": {
@@ -30,7 +30,6 @@
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
     "mocha": "^10.2.0",
-    "nerdbank-gitversioning": "^3.6.133",
     "prettier": "^3.1.0",
     "source-map-support": "^0.5.21",
     "ts-node": "^10.9.1",
