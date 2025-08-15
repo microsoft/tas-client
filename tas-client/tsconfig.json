@@ -1,7 +1,8 @@
 {
   "compilerOptions": {
-      "module": "commonjs",
+      "module": "ESNext",
       "target": "es2017",
+      "moduleResolution": "bundler",
       "outDir": "out",
       "lib": [
           "es2017",
@@ -16,10 +17,15 @@
       "forceConsistentCasingInFileNames": true,
       "allowJs": false,
       "noImplicitAny": false,
-      "declaration": true
+      "declaration": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "types": ["vitest/globals"],
+      "skipLibCheck": true
   },
   "exclude": [
       "node_modules",
-      "out"
+      "out",
+      "vitest.config.ts"
   ]
 }

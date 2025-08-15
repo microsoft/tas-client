@@ -10,7 +10,7 @@ import {
 } from '../src/tas-client/FeatureProvider/TasApiFeatureProvider';
 import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient';
 import { It, Mock, Times } from 'typemoq';
-import { expect } from 'chai';
+import { expect, describe, it } from 'vitest';
 
 describe('TAS Api Feature Provider Tests', () => {
     it('Should NOT send telemetry when no error ocurred.', async () => {
@@ -80,15 +80,15 @@ describe('TAS Api Feature Provider Tests', () => {
         try {
             await tasApiProvider.fetch();
         } catch (err) {
-            expect(err).to.be.an.instanceOf(Error);
+            expect(err).toBeInstanceOf(Error);
             exceptionThrown = true;
-            expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
+            expect((err as Error).message).toBe(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
         httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
-        expect(exceptionThrown).to.equal(true);
+        expect(exceptionThrown).toBe(true);
     });
 
     it('Should send telemetry of type NoResponse when no response was returned from the server but a request exists.', async () => {
@@ -121,15 +121,15 @@ describe('TAS Api Feature Provider Tests', () => {
         try {
             await tasApiProvider.fetch();
         } catch (err) {
-            expect(err).to.be.an.instanceOf(Error);
+            expect(err).toBeInstanceOf(Error);
             exceptionThrown = true;
-            expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
+            expect((err as Error).message).toBe(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
         httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
-        expect(exceptionThrown).to.equal(true);
+        expect(exceptionThrown).toBe(true);
     });
 
     it('Should send telemetry of type GenericError when no request or response was available in the response.', async () => {
@@ -168,14 +168,14 @@ describe('TAS Api Feature Provider Tests', () => {
         try {
             await tasApiProvider.fetch();
         } catch (err) {
-            expect(err).to.be.an.instanceOf(Error);
+            expect(err).toBeInstanceOf(Error);
             exceptionThrown = true;
-            expect((err as Error).message).to.equal(TASAPI_FETCHERROR_EVENTNAME);
+            expect((err as Error).message).toBe(TASAPI_FETCHERROR_EVENTNAME);
         }
         // verify
         httpClient.verifyAll();
         telemetry.verifyAll();
         // assert exception was thrown.
-        expect(exceptionThrown).to.equal(true);
+        expect(exceptionThrown).toBe(true);
     });
 });

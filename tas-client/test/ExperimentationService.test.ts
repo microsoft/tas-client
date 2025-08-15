@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { expect, assert } from 'chai';
+import { expect, describe, it } from 'vitest';
 import {
     ExperimentationServiceMock,
     FeatureProviderTestSpec,
@@ -331,7 +331,7 @@ describe('Get features from multiple providers that differ in polling intervals 
     it('should automatically refetch the third result and update cached config.', async () => {
         let features = await storage.getValue<FeatureData>('StorageKey');
 
-        expect(features!.configs).deep.equal([{ Id: 'test', Parameters: { character1: 'falco', hp1: 30, character2: 'kirby', isPink: true, character3: 'ness', hp3: 80 } }]);
+        expect(features!.configs).toEqual([{ Id: 'test', Parameters: { character1: 'falco', hp1: 30, character2: 'kirby', isPink: true, character3: 'ness', hp3: 80 } }]);
     });
 
     // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco'], however, because it was
@@ -382,15 +382,14 @@ describe('Get features from multiple providers that differ in polling intervals 
 });
 
 describe('Experimentation Service general tests', () => {
-    it('should throw if Ms are less than 1000 and different from 0', (done) => {
-        assert.throws(
+    it('should throw if Ms are less than 1000 and different from 0', () => {
+        expect(
             () =>
                 new ExperimentationServiceMock(
                     [], [{ fetchDelay: 200, fetchResolver: new FetchResolver({ features: ['result'], assignmentContext: '', configs: [] }) }],
                     500,
                 ),
-        );
-        done();
+        ).toThrow();
     });
 
     it('should combine filters from filter providers', async () => {

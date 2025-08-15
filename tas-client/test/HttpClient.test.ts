@@ -5,16 +5,15 @@
 
 import * as http from 'http';
 import * as net from 'net';
-import { expect } from 'chai';
+import { expect, describe, it, beforeAll, afterAll } from 'vitest';
 import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient';
-import { suiteSetup, suiteTeardown } from 'mocha';
 
 describe('HttpClient Tests', () => {
     let port: number;
     let server: http.Server;
     const connections = new Set<net.Socket>();
 
-    suiteSetup(async () => {
+    beforeAll(async () => {
         port = await new Promise<number>((resolvePort, rejectPort) => {
             server = http
                 .createServer((req, res) => {
@@ -48,7 +47,7 @@ describe('HttpClient Tests', () => {
         });
     });
 
-    suiteTeardown(async () => {
+    afterAll(async () => {
         await new Promise<void>((resolve, reject) => {
             server.close((err) => (err ? reject(err) : resolve()));
             connections.forEach((socket) => socket.destroy());
@@ -63,9 +62,9 @@ describe('HttpClient Tests', () => {
                 'echo-header': 'echo-fetch',
             },
         });
-        expect(result.data.url).to.equal(path);
-        expect(result.data.headers['echo-header']).to.equal('echo-fetch');
-        expect(result.data.headers['user-agent']).to.equal('node'); // only set with fetch
+        expect(result.data.url).toBe(path);
+        expect(result.data.headers['echo-header']).toBe('echo-fetch');
+        expect(result.data.headers['user-agent']).toBe('node'); // only set with fetch
     });
 
     it('should use Node.js modules', async () => {
@@ -76,8 +75,8 @@ describe('HttpClient Tests', () => {
                 'echo-header': 'echo-http',
             },
         });
-        expect(result.data.url).to.equal(path);
-        expect(result.data.headers['echo-header']).to.equal('echo-http');
-        expect(result.data.headers['user-agent']).to.equal(undefined); // only set with fetch
+        expect(result.data.url).toBe(path);
+        expect(result.data.headers['echo-header']).toBe('echo-http');
+        expect(result.data.headers['user-agent']).toBe(undefined); // only set with fetch
     });
 });

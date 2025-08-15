@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ExperimentationFilterProviderTwoFilterMock } from './mocks/ExperimentationFilterProviderMock';
-import { expect } from 'chai';
+import { expect, describe, it } from 'vitest';
 import { FetchResolver } from './mocks/FetchResolver';
 import { BaseFeatureProviderMock } from './mocks/BaseFeatureProviderMock';
 import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
@@ -37,13 +37,13 @@ describe('Feature Provider tests', () => {
     it('Feature provider should always run fetch whenever features are accessed. They do not hold cache.', async () => {
         //evaluate
         let features = await featureProvider!.getFeatures();
-        expect(features.features).to.eql(['feature1', 'feature2']);
+        expect(features.features).toEqual(['feature1', 'feature2']);
 
         features = await featureProvider!.getFeatures();
-        expect(features.features).to.eql(['feature1']);
+        expect(features.features).toEqual(['feature1']);
 
         features = await featureProvider!.getFeatures();
-        expect(features.features).to.eql(['feature2']);
+        expect(features.features).toEqual(['feature2']);
     });
 
     it('Feature provider should post headers to telemetry.', async () => {
@@ -56,9 +56,9 @@ describe('Feature Provider tests', () => {
         // In the fetch method we're posting the headers.
         await filteredFeatureProvider.fetch();
 
-        expect(telemetryMock.postedEvents.length).to.be.greaterThan(0);
+        expect(telemetryMock.postedEvents.length).toBeGreaterThan(0);
         const postedEvent = telemetryMock.postedEvents[0];
         const postedEventArgs = postedEvent.args.get('ABExp.headers');
-        expect(postedEventArgs).to.be.equal('{"lucario":true,"wario":false}');
+        expect(postedEventArgs).toBe('{"lucario":true,"wario":false}');
     });
 });
