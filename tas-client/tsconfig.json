@@ -15,6 +15,7 @@
       "strictNullChecks": true,
       "forceConsistentCasingInFileNames": true,
       "allowJs": false,
+      "noImplicitAny": false,
       "declaration": true
   },
   "exclude": [

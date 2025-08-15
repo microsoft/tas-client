@@ -1,6 +1,9 @@
 {
   "name": "tas-client",
-  "version": "0.0.0-placeholder",
+  "version": "0.2.37",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
   "main": "./index.js",
   "scripts": {
@@ -21,7 +24,7 @@
   "devDependencies": {
     "@types/chai": "^4.3.10",
     "@types/mocha": "^10.0.4",
-    "@types/node": "^18.8.2",
+    "@types/node": "^22.0.0",
     "@types/semver": "^7.5.5",
     "@typescript-eslint/eslint-plugin-tslint": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
@@ -36,6 +39,6 @@
     "ts-node": "^10.9.1",
     "tslint": "^5.20.1",
     "typemoq": "2.1.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.9.2"
   }
 }
