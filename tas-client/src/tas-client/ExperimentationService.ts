@@ -18,8 +18,6 @@ import { ExperimentationServiceAutoPolling } from './ExperimentationServiceAutoP
 export class ExperimentationService extends ExperimentationServiceAutoPolling {
     public static REFRESH_RATE_IN_MINUTES: number = 30;
 
-    protected featureProviders?: IFeatureProvider[];
-
     constructor(private options: ExperimentationServiceConfig) {
         super(
             options.telemetry,

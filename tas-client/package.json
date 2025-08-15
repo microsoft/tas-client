@@ -1,11 +1,18 @@
 {
   "name": "tas-client",
   "version": "0.2.37",
+  "type": "module",
   "engines": {
     "node": ">=22"
   },
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
-  "main": "./index.js",
+  "main": "./out/src/index.js",
+  "exports": {
+    ".": {
+      "types": "./out/src/index.d.ts",
+      "default": "./out/src/index.js"
+    }
+  },
   "scripts": {
     "compile": "tsc -p ./",
     "eslint": "eslint src --ext ts",

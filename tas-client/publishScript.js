@@ -1,8 +1,12 @@
-const cp = require('child_process');
-const fs = require('fs');
-const path = require('path');
-const nbgv = require('nerdbank-gitversioning');
-const util = require('util');
+import cp from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import nbgv from 'nerdbank-gitversioning';
+import util from 'util';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const outDir = './out/src';
 const packageJsonFile = path.join(__dirname, 'package.json');
@@ -43,8 +47,22 @@ async function copyPackageContents() {
     const sourceFile = packageJsonFile;
     await util.promisify(fs.mkdir)(packageDir, { recursive: true });
     const destinationFile = path.join(outDir, 'package.json');
-    await util.promisify(fs.copyFile)(sourceFile, destinationFile);
-    console.log('package.json copied successfully to outDir');
+    
+    // Read the original package.json
+    const packageJson = JSON.parse(fs.readFileSync(sourceFile, 'utf8'));
+    
+    // Fix the paths for the published package
+    packageJson.main = './index.js';
+    packageJson.exports = {
+        '.': {
+            'types': './index.d.ts',
+            'default': './index.js'
+        }
+    };
+    
+    // Write the modified package.json to the output directory
+    await util.promisify(fs.writeFile)(destinationFile, JSON.stringify(packageJson, null, 2));
+    console.log('package.json copied and updated successfully to outDir');
 }
 
 function setPackageVersion() {
