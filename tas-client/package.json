@@ -25,11 +25,7 @@
     "watch": "tsc -watch -p ./",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui",
-    "clean-build-link": "npm install && npm run compile && npm link",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "test-publish": "node ./publishScript.js --test",
-    "publish": "node ./publishScript.js --publish"
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "tas-client"

@@ -1,41 +1,49 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+pr: none
+
 resources:
   repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
+    - repository: templates
+      type: github
+      name: microsoft/vscode-engineering
+      ref: main
+      endpoint: Monaco
+
+parameters:
+  - name: publishPackage
+    displayName: 🚀 Publish tas-client
+    type: boolean
+    default: false
+
 extends:
-  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  template: azure-pipelines/npm-package/pipeline.yml@templates
   parameters:
-    settings:
-      skipBuildTagsForGitHubPullRequests: true
-    pool:
-      name: AzurePipelines-EO
-      image: 1ESPT-Windows2022
-      os: windows
-    stages:
-    - stage: stage
-      jobs:
-      - job: job
-        pool:
-          name: AzurePipelines-EO
-          image: 1ESPT-Ubuntu22.04
-          os: linux
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: './tas-client/out/pkg'
-        steps:
-        - task: NodeTool@0
-          inputs:
-            versionSpec: '18.x'
-          displayName: 'Install Node.js'
-        - script: npm install
-          workingDirectory: './tas-client'
-          displayName: 'npm install'
-        - script: npm run test-publish
-          displayName: 'Build package'
-          workingDirectory: './tas-client'
-        - script: npm run test
-          displayName: 'Run tests'
-          workingDirectory: './tas-client'
+    npmPackages:
+      - name: tas-client
+        workingDirectory: $(Build.SourcesDirectory)/tas-client
+
+        buildSteps:
+          - script: npm i
+            displayName: Install dependencies
+
+          - script: npm run compile
+            displayName: Compile Package
+
+        testSteps:
+          - script: npm i
+            displayName: Install dependencies
+          
+          - script: npm run compile
+            displayName: Compile Package
+
+          - script: npm test
+            displayName: Run vitest tests
+
+        publishPackage: ${{ parameters.publishPackage }}
+        publishRequiresApproval: false
