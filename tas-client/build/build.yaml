@@ -26,7 +26,6 @@ extends:
   parameters:
     npmPackages:
       - name: tas-client
-        workingDirectory: $(Build.SourcesDirectory)/tas-client
 
         testPlatforms:
           - name: Linux
@@ -36,19 +35,25 @@ extends:
         buildSteps:
           - script: npm i
             displayName: Install dependencies
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
 
           - script: npm run compile
             displayName: Compile Package
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
 
         testSteps:
           - script: npm i
             displayName: Install dependencies
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
           
           - script: npm run compile
             displayName: Compile Package
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
 
           - script: npm test
             displayName: Run vitest tests
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
 
         publishPackage: ${{ parameters.publishPackage }}
         publishRequiresApproval: false
+        workingDirectory: $(Build.SourcesDirectory)/tas-client
