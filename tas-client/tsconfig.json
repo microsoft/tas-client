@@ -18,6 +18,7 @@
       "allowJs": false,
       "noImplicitAny": false,
       "declaration": true,
+      "declarationMap": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
       "types": ["vitest/globals"],

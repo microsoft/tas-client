@@ -7,6 +7,12 @@
   },
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
   "main": "./out/src/index.js",
+  "types": "./out/src/index.d.ts",
+  "files": [
+    "out/src/**/*",
+    "README.md",
+    "LICENSE.txt"
+  ],
   "exports": {
     ".": {
       "types": "./out/src/index.d.ts",
