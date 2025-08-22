@@ -28,6 +28,11 @@ extends:
       - name: tas-client
         workingDirectory: $(Build.SourcesDirectory)/tas-client
 
+        testPlatforms:
+          - name: Linux
+            nodeVersions:
+              - 22.x
+
         buildSteps:
           - script: npm i
             displayName: Install dependencies
