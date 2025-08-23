@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationServiceBase } from './ExperimentationServiceBase';
-import { IExperimentationTelemetry } from '../contracts/IExperimentationTelemetry';
-import { PollingService } from './Util/PollingService';
-import { IExperimentationFilterProvider } from '../contracts/IExperimentationFilterProvider';
-import { IKeyValueStorage } from '../contracts/IKeyValueStorage';
-import { FeatureData } from './FeatureProvider/IFeatureProvider';
+import { ExperimentationServiceBase } from './ExperimentationServiceBase.js';
+import { IExperimentationTelemetry } from '../contracts/IExperimentationTelemetry.js';
+import { PollingService } from './Util/PollingService.js';
+import { IExperimentationFilterProvider } from '../contracts/IExperimentationFilterProvider.js';
+import { IKeyValueStorage } from '../contracts/IKeyValueStorage.js';
+import { FeatureData } from './FeatureProvider/IFeatureProvider.js';
 
 /**
  * Implementation of Feature provider that provides a polling feature, where the source can be re-fetched every x time given.

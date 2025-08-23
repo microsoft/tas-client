@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationTelemetry } from '../src/contracts/IExperimentationTelemetry';
+import { IExperimentationTelemetry } from '../src/contracts/IExperimentationTelemetry.js';
 import {
     TasApiFeatureProvider,
     TASAPI_FETCHERROR_EVENTNAME,
-} from '../src/tas-client/FeatureProvider/TasApiFeatureProvider';
-import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient';
+} from '../src/tas-client/FeatureProvider/TasApiFeatureProvider.js';
+import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient.js';
 import { It, Mock, Times } from 'typemoq';
 import { expect, describe, it } from 'vitest';
 

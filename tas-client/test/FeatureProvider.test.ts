@@ -3,12 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationFilterProviderTwoFilterMock } from './mocks/ExperimentationFilterProviderMock';
+import { ExperimentationFilterProviderTwoFilterMock } from './mocks/ExperimentationFilterProviderMock.js';
 import { expect, describe, it } from 'vitest';
-import { FetchResolver } from './mocks/FetchResolver';
-import { BaseFeatureProviderMock } from './mocks/BaseFeatureProviderMock';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
-import { MockFilteredFeatureProvider } from './mocks/MockFilteredFeatureProvider';
+import { FetchResolver } from './mocks/FetchResolver.js';
+import { BaseFeatureProviderMock } from './mocks/BaseFeatureProviderMock.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
+import { MockFilteredFeatureProvider } from './mocks/MockFilteredFeatureProvider.js';
 
 /**
  * For this test we want to ensure the unique capability of a Feature provider, which is to call the fetch method everytime it's called.

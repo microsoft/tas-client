@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider';
-import { FetchError, FetchResult, HttpClient } from '../Util/HttpClient';
-import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry';
-import { FilteredFeatureProvider } from './FilteredFeatureProvider';
-import { FeatureData, ConfigData } from './IFeatureProvider';
+import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider.js';
+import { FetchError, FetchResult, HttpClient } from '../Util/HttpClient.js';
+import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry.js';
+import { FilteredFeatureProvider } from './FilteredFeatureProvider.js';
+import { FeatureData, ConfigData } from './IFeatureProvider.js';
 
 export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
 const ERROR_TYPE = 'ErrorType';

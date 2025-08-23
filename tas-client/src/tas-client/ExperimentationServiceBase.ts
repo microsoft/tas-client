@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationService } from '../contracts/IExperimentationService';
-import { IExperimentationTelemetry } from '../contracts/IExperimentationTelemetry';
-import { IKeyValueStorage } from '../contracts/IKeyValueStorage';
-import { IFeatureProvider, FeatureData } from './FeatureProvider/IFeatureProvider';
-import { MemoryKeyValueStorage } from './Util/MemoryKeyValueStorage';
+import { IExperimentationService } from '../contracts/IExperimentationService.js';
+import { IExperimentationTelemetry } from '../contracts/IExperimentationTelemetry.js';
+import { IKeyValueStorage } from '../contracts/IKeyValueStorage.js';
+import { IFeatureProvider, FeatureData } from './FeatureProvider/IFeatureProvider.js';
+import { MemoryKeyValueStorage } from './Util/MemoryKeyValueStorage.js';
 
 /**
  * Experimentation service to provide functionality of A/B experiments:

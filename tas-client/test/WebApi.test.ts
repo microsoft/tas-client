@@ -3,10 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { KeyValueStorageMock } from './mocks/KeyValueStorageMock';
-import { ExperimentationFilterProviderMock } from './mocks/ExperimentationFilterProviderMock';
-import { ExperimentationService } from '../src/tas-client/ExperimentationService';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
+import { KeyValueStorageMock } from './mocks/KeyValueStorageMock.js';
+import { ExperimentationFilterProviderMock } from './mocks/ExperimentationFilterProviderMock.js';
+import { ExperimentationService } from '../src/tas-client/ExperimentationService.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
 import { describe, it, expect } from 'vitest';
 
 /**

@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider';
-import { BaseFeatureProvider } from '../../src/tas-client/FeatureProvider/BaseFeatureProvider';
-import { FetchResolver } from './FetchResolver';
-import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry';
-import { FilteredFeatureProvider } from '../../src/tas-client/FeatureProvider/FilteredFeatureProvider';
-import { FeatureData } from '../../src/tas-client/FeatureProvider/IFeatureProvider';
-import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock';
+import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider.js';
+import { BaseFeatureProvider } from '../../src/tas-client/FeatureProvider/BaseFeatureProvider.js';
+import { FetchResolver } from './FetchResolver.js';
+import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry.js';
+import { FilteredFeatureProvider } from '../../src/tas-client/FeatureProvider/FilteredFeatureProvider.js';
+import { FeatureData } from '../../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock.js';
 
 /**
  * If there's no cached data (which there isn't) an initial fetch will be executed.

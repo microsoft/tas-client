@@ -6,7 +6,7 @@
 import * as http from 'http';
 import * as net from 'net';
 import { expect, describe, it, beforeAll, afterAll } from 'vitest';
-import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient';
+import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient.js';
 
 describe('HttpClient Tests', () => {
     let port: number;

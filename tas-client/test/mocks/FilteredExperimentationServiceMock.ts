@@ -3,16 +3,16 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock';
+import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock.js';
 import {
     ExperimentationFilterProviderOneFilterMock,
     ExperimentationFilterProviderTwoFilterMock,
-} from './ExperimentationFilterProviderMock';
-import { KeyValueStorageMock } from './KeyValueStorageMock';
-import { FetchResolver } from './FetchResolver';
-import { BaseFeatureProviderMock, FilteredFeatureProviderMock } from './BaseFeatureProviderMock';
-import { ExperimentationServiceAutoPolling } from '../../src/tas-client/ExperimentationServiceAutoPolling';
-import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider';
+} from './ExperimentationFilterProviderMock.js';
+import { KeyValueStorageMock } from './KeyValueStorageMock.js';
+import { FetchResolver } from './FetchResolver.js';
+import { BaseFeatureProviderMock, FilteredFeatureProviderMock } from './BaseFeatureProviderMock.js';
+import { ExperimentationServiceAutoPolling } from '../../src/tas-client/ExperimentationServiceAutoPolling.js';
+import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider.js';
 
 export class FilteredExperimentationServiceMock extends ExperimentationServiceAutoPolling {
     constructor(protected filterProviders: IExperimentationFilterProvider[]) {

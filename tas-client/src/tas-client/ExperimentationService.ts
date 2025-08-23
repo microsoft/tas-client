@@ -3,11 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IFeatureProvider } from './FeatureProvider/IFeatureProvider';
-import { TasApiFeatureProvider } from './FeatureProvider/TasApiFeatureProvider';
-import { HttpClient } from './Util/HttpClient';
-import { ExperimentationServiceConfig } from '../contracts/ExperimentationServiceConfig';
-import { ExperimentationServiceAutoPolling } from './ExperimentationServiceAutoPolling';
+import { IFeatureProvider } from './FeatureProvider/IFeatureProvider.js';
+import { TasApiFeatureProvider } from './FeatureProvider/TasApiFeatureProvider.js';
+import { HttpClient } from './Util/HttpClient.js';
+import { ExperimentationServiceConfig } from '../contracts/ExperimentationServiceConfig.js';
+import { ExperimentationServiceAutoPolling } from './ExperimentationServiceAutoPolling.js';
 
 /**
  * Experimentation service to provide functionality of A/B experiments:

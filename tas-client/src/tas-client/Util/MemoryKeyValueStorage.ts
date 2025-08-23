@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IKeyValueStorage } from '../../contracts/IKeyValueStorage';
+import { IKeyValueStorage } from '../../contracts/IKeyValueStorage.js';
 export class MemoryKeyValueStorage implements IKeyValueStorage {
     private storage: Map<string, any> = new Map<string, any>();
 

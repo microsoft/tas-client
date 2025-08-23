@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry';
+import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry.js';
 
 export class ExperimentationTelemetryMock implements IExperimentationTelemetry {
     public postedEvents: { eventName: string, args: any, sharedProperties: Map<string, string> }[] = [];

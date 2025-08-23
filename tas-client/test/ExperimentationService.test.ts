@@ -7,17 +7,17 @@ import { expect, describe, it } from 'vitest';
 import {
     ExperimentationServiceMock,
     FeatureProviderTestSpec,
-} from './mocks/ExperimentationServiceMock';
-import { FetchResolver } from './mocks/FetchResolver';
-import { FilteredExperimentationServiceMock } from './mocks/FilteredExperimentationServiceMock';
+} from './mocks/ExperimentationServiceMock.js';
+import { FetchResolver } from './mocks/FetchResolver.js';
+import { FilteredExperimentationServiceMock } from './mocks/FilteredExperimentationServiceMock.js';
 import {
     ExperimentationFilterProviderOneFilterMock,
     ExperimentationFilterProviderTwoFilterMock,
-} from './mocks/ExperimentationFilterProviderMock';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
-import { KeyValueStorageMock } from './mocks/KeyValueStorageMock';
-import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider';
-import { ThrowFeatureProvider } from './mocks/BaseFeatureProviderMock';
+} from './mocks/ExperimentationFilterProviderMock.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
+import { KeyValueStorageMock } from './mocks/KeyValueStorageMock.js';
+import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { ThrowFeatureProvider } from './mocks/BaseFeatureProviderMock.js';
 
 /**
  * Multiple feature providers.
