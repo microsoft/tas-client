@@ -1,6 +1,6 @@
 {
   "name": "tas-client",
-  "version": "0.2.37",
+  "version": "0.3.0",
   "type": "module",
   "engines": {
     "node": ">=22"

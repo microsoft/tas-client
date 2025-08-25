@@ -2,8 +2,7 @@
 This repo is home to three separate projects:
 
 - **tas-client** - base module for interacting with a treatment assignment service endpoint.
-- **tas-client-umd** - UMD version of **tas-client**.
-- **vscode-tas-client** - consumer of **tas-client** providing some VS Code-specific implementation.
+- **vscode-tas-client** - consumer of **tas-client** providing some VS Code-specific implementation for extensions.
 
 READMEs for each are under their respective folders.
 
