@@ -3,10 +3,11 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { KeyValueStorageMock } from './mocks/KeyValueStorageMock';
-import { ExperimentationFilterProviderMock } from './mocks/ExperimentationFilterProviderMock';
-import { ExperimentationService } from '../src/tas-client/ExperimentationService';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
+import { KeyValueStorageMock } from './mocks/KeyValueStorageMock.js';
+import { ExperimentationFilterProviderMock } from './mocks/ExperimentationFilterProviderMock.js';
+import { ExperimentationService } from '../src/tas-client/ExperimentationService.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
+import { describe, it, expect } from 'vitest';
 
 /**
  * For this test we want to ensure the polling interval works properly when set.
@@ -34,6 +35,12 @@ describe('Web Api Test', () => {
         endpoint: 'https://default.exp-tas.com/vscode/ab',
         assignmentContextTelemetryPropertyName: 'AssignmentContextTelemetryName',
         telemetryEventName: 'event',
+    });
+
+    // Placeholder test to avoid empty suite error
+    it('should create experimentation services', () => {
+        expect(experimentationService).toBeDefined();
+        expect(experimentationServiceWithoutFilters).toBeDefined();
     });
 
     /** 

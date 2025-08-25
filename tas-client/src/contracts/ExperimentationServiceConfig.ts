@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationTelemetry } from './IExperimentationTelemetry';
-import { IExperimentationFilterProvider } from './IExperimentationFilterProvider';
-import { IKeyValueStorage } from './IKeyValueStorage';
+import { IExperimentationTelemetry } from './IExperimentationTelemetry.js';
+import { IExperimentationFilterProvider } from './IExperimentationFilterProvider.js';
+import { IKeyValueStorage } from './IKeyValueStorage.js';
 
 /**
  * Options that include the implementations of the Experimentation service.

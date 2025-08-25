@@ -1,10 +1,11 @@
 {
   "compilerOptions": {
-      "module": "commonjs",
-      "target": "es2017",
+      "module": "nodenext",
+      "target": "ES2022",
+      "moduleResolution": "nodenext",
       "outDir": "out",
       "lib": [
-          "es2017",
+          "ES2022",
           "dom"
       ],
       "sourceMap": true,
@@ -15,10 +16,17 @@
       "strictNullChecks": true,
       "forceConsistentCasingInFileNames": true,
       "allowJs": false,
-      "declaration": true
+      "noImplicitAny": false,
+      "declaration": true,
+      "declarationMap": true,
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "types": ["vitest/globals"],
+      "skipLibCheck": true
   },
   "exclude": [
       "node_modules",
-      "out"
+      "out",
+      "vitest.config.ts"
   ]
 }

@@ -1,17 +1,31 @@
 {
   "name": "tas-client",
-  "version": "0.0.0-placeholder",
+  "version": "0.3.0",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
-  "main": "./index.js",
+  "main": "./out/src/index.js",
+  "types": "./out/src/index.d.ts",
+  "files": [
+    "out/src/**/*",
+    "README.md",
+    "LICENSE.txt"
+  ],
+  "exports": {
+    ".": {
+      "types": "./out/src/index.d.ts",
+      "default": "./out/src/index.js"
+    }
+  },
   "scripts": {
     "compile": "tsc -p ./",
     "eslint": "eslint src --ext ts",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && mocha --require source-map-support/register out/test/*.js",
-    "clean-build-link": "npm install && npm run compile && npm link",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "test-publish": "node ./publishScript.js --test",
-    "publish": "node ./publishScript.js --publish"
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "keywords": [
     "tas-client"
@@ -19,23 +33,20 @@
   "author": "Microsoft",
   "license": "MIT",
   "devDependencies": {
-    "@types/chai": "^4.3.10",
-    "@types/mocha": "^10.0.4",
-    "@types/node": "^18.8.2",
+    "@types/node": "^22.0.0",
     "@types/semver": "^7.5.5",
     "@typescript-eslint/eslint-plugin-tslint": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
-    "chai": "^4.3.10",
+    "@vitest/ui": "^2.0.5",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
-    "mocha": "^10.2.0",
     "nerdbank-gitversioning": "^3.6.133",
     "prettier": "^3.1.0",
-    "source-map-support": "^0.5.21",
     "ts-node": "^10.9.1",
     "tslint": "^5.20.1",
     "typemoq": "2.1.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.9.2",
+    "vitest": "^2.0.5"
   }
 }

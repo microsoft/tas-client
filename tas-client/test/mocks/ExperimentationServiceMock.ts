@@ -3,15 +3,15 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock';
-import { ExperimentationFilterProviderMock } from './ExperimentationFilterProviderMock';
-import { KeyValueStorageMock } from './KeyValueStorageMock';
-import { FetchResolver } from './FetchResolver';
-import { BaseFeatureProviderMock } from './BaseFeatureProviderMock';
-import { ExperimentationServiceAutoPolling } from '../../src/tas-client/ExperimentationServiceAutoPolling';
-import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry';
-import { IKeyValueStorage } from '../../src/contracts/IKeyValueStorage';
-import { IFeatureProvider } from '../../src/tas-client/FeatureProvider/IFeatureProvider';
+import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock.js';
+import { ExperimentationFilterProviderMock } from './ExperimentationFilterProviderMock.js';
+import { KeyValueStorageMock } from './KeyValueStorageMock.js';
+import { FetchResolver } from './FetchResolver.js';
+import { BaseFeatureProviderMock } from './BaseFeatureProviderMock.js';
+import { ExperimentationServiceAutoPolling } from '../../src/tas-client/ExperimentationServiceAutoPolling.js';
+import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry.js';
+import { IKeyValueStorage } from '../../src/contracts/IKeyValueStorage.js';
+import { IFeatureProvider } from '../../src/tas-client/FeatureProvider/IFeatureProvider.js';
 
 export class ExperimentationServiceMock extends ExperimentationServiceAutoPolling {
     constructor(

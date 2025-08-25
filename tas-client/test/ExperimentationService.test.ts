@@ -3,21 +3,21 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { expect, assert } from 'chai';
+import { expect, describe, it } from 'vitest';
 import {
     ExperimentationServiceMock,
     FeatureProviderTestSpec,
-} from './mocks/ExperimentationServiceMock';
-import { FetchResolver } from './mocks/FetchResolver';
-import { FilteredExperimentationServiceMock } from './mocks/FilteredExperimentationServiceMock';
+} from './mocks/ExperimentationServiceMock.js';
+import { FetchResolver } from './mocks/FetchResolver.js';
+import { FilteredExperimentationServiceMock } from './mocks/FilteredExperimentationServiceMock.js';
 import {
     ExperimentationFilterProviderOneFilterMock,
     ExperimentationFilterProviderTwoFilterMock,
-} from './mocks/ExperimentationFilterProviderMock';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock';
-import { KeyValueStorageMock } from './mocks/KeyValueStorageMock';
-import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider';
-import { ThrowFeatureProvider } from './mocks/BaseFeatureProviderMock';
+} from './mocks/ExperimentationFilterProviderMock.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
+import { KeyValueStorageMock } from './mocks/KeyValueStorageMock.js';
+import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { ThrowFeatureProvider } from './mocks/BaseFeatureProviderMock.js';
 
 /**
  * Multiple feature providers.
@@ -331,7 +331,7 @@ describe('Get features from multiple providers that differ in polling intervals 
     it('should automatically refetch the third result and update cached config.', async () => {
         let features = await storage.getValue<FeatureData>('StorageKey');
 
-        expect(features!.configs).deep.equal([{ Id: 'test', Parameters: { character1: 'falco', hp1: 30, character2: 'kirby', isPink: true, character3: 'ness', hp3: 80 } }]);
+        expect(features!.configs).toEqual([{ Id: 'test', Parameters: { character1: 'falco', hp1: 30, character2: 'kirby', isPink: true, character3: 'ness', hp3: 80 } }]);
     });
 
     // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco'], however, because it was
@@ -382,15 +382,14 @@ describe('Get features from multiple providers that differ in polling intervals 
 });
 
 describe('Experimentation Service general tests', () => {
-    it('should throw if Ms are less than 1000 and different from 0', (done) => {
-        assert.throws(
+    it('should throw if Ms are less than 1000 and different from 0', () => {
+        expect(
             () =>
                 new ExperimentationServiceMock(
                     [], [{ fetchDelay: 200, fetchResolver: new FetchResolver({ features: ['result'], assignmentContext: '', configs: [] }) }],
                     500,
                 ),
-        );
-        done();
+        ).toThrow();
     });
 
     it('should combine filters from filter providers', async () => {

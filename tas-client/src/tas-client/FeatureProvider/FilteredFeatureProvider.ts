@@ -3,9 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider';
-import { BaseFeatureProvider } from './BaseFeatureProvider';
-import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry';
+import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider.js';
+import { BaseFeatureProvider } from './BaseFeatureProvider.js';
+import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry.js';
 
 /**
  * Feature provider implementation that handles filters.

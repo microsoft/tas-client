@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IFeatureProvider, FeatureData } from './IFeatureProvider';
-import { IExperimentationTelemetry } from 'src/contracts/IExperimentationTelemetry';
+import { IFeatureProvider, FeatureData } from './IFeatureProvider.js';
+import { IExperimentationTelemetry } from 'src/contracts/IExperimentationTelemetry.js';
 
 /**
  * Abstract class for Feature Provider Implementation.

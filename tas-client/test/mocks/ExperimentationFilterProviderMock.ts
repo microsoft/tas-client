@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider';
+import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider.js';
 
 export class ExperimentationFilterProviderMock implements IExperimentationFilterProvider {
     public getFilters() {

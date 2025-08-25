@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { FeatureData } from "../../src/tas-client/FeatureProvider/IFeatureProvider";
+import { FeatureData } from "../../src/tas-client/FeatureProvider/IFeatureProvider.js";
 
 export class FetchResolver {
     private availableResults: FeatureData[] = [];

@@ -3,8 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { FilteredFeatureProvider } from "../../src/tas-client/FeatureProvider/FilteredFeatureProvider";
-import { FeatureData } from "../../src/tas-client/FeatureProvider/IFeatureProvider";
+import { FilteredFeatureProvider } from "../../src/tas-client/FeatureProvider/FilteredFeatureProvider.js";
+import { FeatureData } from "../../src/tas-client/FeatureProvider/IFeatureProvider.js";
 
 export class MockFilteredFeatureProvider extends FilteredFeatureProvider {
     
