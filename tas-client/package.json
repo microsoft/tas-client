@@ -37,7 +37,7 @@
     "@types/semver": "^7.5.5",
     "@typescript-eslint/eslint-plugin-tslint": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
-    "@vitest/ui": "^2.0.5",
+    "@vitest/ui": "^3.2.4",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
@@ -47,6 +47,6 @@
     "tslint": "^5.20.1",
     "typemoq": "2.1.0",
     "typescript": "^5.9.2",
-    "vitest": "^2.0.5"
+    "vitest": "^3.2.4"
   }
 }
