@@ -4,6 +4,15 @@
 
 This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.
 
+## Development
+
+### Building
+
+- `npm run compile` - Compile TypeScript to JavaScript
+- `npm run bundle` - Bundle the package into a single file (output: `out/bundle/tas-client.js`)
+- `npm run watch` - Watch mode for TypeScript compilation
+- `npm test` - Run tests
+
 ## Usage
 
 First, your client should implement an `IExperimentationFilterProvider`, `IExperimentationTelemetry`, and `IKeyValueStorage`.
