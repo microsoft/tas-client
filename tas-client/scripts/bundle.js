@@ -13,7 +13,7 @@ async function bundle() {
     const commonOptions = {
         entryPoints: [join(root, 'src', 'index.ts')],
         bundle: true,
-        platform: 'node',
+        platform: 'neutral',
         format: 'iife',
         globalName: '__TasClientExports',
         target: 'es2022',
@@ -22,18 +22,22 @@ async function bundle() {
         banner: {
             js: `(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
+        // AMD
         define([], factory);
-    } else if (typeof module === 'object' && module.exports) {
+    } else if (typeof exports === 'object' && typeof module !== 'undefined') {
+        // CommonJS
         module.exports = factory();
     } else {
+        // Browser globals
         root.TasClient = factory();
     }
-}(typeof self !== 'undefined' ? self : this, function () {`
+}(typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this, function () {`
         },
         footer: {
             js: `return __TasClientExports;
 }));`
-        }
+        },
+        external: ['http', 'https']
     };
 
     // Build non-minified bundle
