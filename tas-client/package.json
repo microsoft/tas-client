@@ -44,7 +44,7 @@
     "@typescript-eslint/eslint-plugin-tslint": "^6.11.0",
     "@typescript-eslint/parser": "^6.11.0",
     "@vitest/ui": "^2.0.5",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.10",
     "eslint": "^8.53.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-prettier": "^5.0.1",
