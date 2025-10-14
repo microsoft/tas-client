@@ -28,7 +28,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
     private _features: FeatureData = {
         features: [],
         assignmentContext: '',
-        configs: []
+        configs: [],
     };
     private get features(): FeatureData {
         return this._features;
@@ -39,7 +39,10 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
          * If an implementation of telemetry exists, we set the shared property.
          */
         if (this.telemetry) {
-            this.telemetry.setSharedProperty(this.assignmentContextTelemetryPropertyName, this.features.assignmentContext);
+            this.telemetry.setSharedProperty(
+                this.assignmentContextTelemetryPropertyName,
+                this.features.assignmentContext,
+            );
         }
     }
 
@@ -87,7 +90,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             return Promise.resolve({
                 features: [],
                 assignmentContext: '',
-                configs: []
+                configs: [],
             });
         }
 
@@ -105,7 +108,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         } catch {
             // Fetching features threw error. Can happen if not connected to the internet, e.g.
         }
-        
+
         this.fetchPromise = undefined;
 
         if (this.resolveInitialFetchPromise) {
@@ -132,8 +135,8 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         let features: FeatureData = {
             features: [],
             assignmentContext: '',
-            configs: []
-        }
+            configs: [],
+        };
 
         for (let result of featureResults) {
             for (let feature of result.features) {
@@ -142,9 +145,12 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
                 }
             }
             for (let config of result.configs) {
-                const existingConfig = features.configs.find(c => c.Id === config.Id);
+                const existingConfig = features.configs.find((c) => c.Id === config.Id);
                 if (existingConfig) {
-                    existingConfig.Parameters = { ...existingConfig.Parameters, ...config.Parameters };
+                    existingConfig.Parameters = {
+                        ...existingConfig.Parameters,
+                        ...config.Parameters,
+                    };
                 } else {
                     features.configs.push(config);
                 }
@@ -171,13 +177,17 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         let cachedFeatureData: FeatureData | undefined;
         if (this.storage) {
             cachedFeatureData = await this.storage.getValue<FeatureData>(this.storageKey!);
-            // When updating from an older version of tas-client, configs may be undefined 
+            // When updating from an older version of tas-client, configs may be undefined
             if (cachedFeatureData !== undefined && cachedFeatureData.configs === undefined) {
                 cachedFeatureData.configs = [];
             }
         }
         if (this.features.features.length === 0) {
-            this.features = cachedFeatureData || { features: [], assignmentContext: '', configs: [] };
+            this.features = cachedFeatureData || {
+                features: [],
+                assignmentContext: '',
+                configs: [],
+            };
         }
     }
 
@@ -223,10 +233,13 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
      * @param config name of the config to check.
      * @param name name of the treatment variable.
      */
-    public getTreatmentVariable<T extends boolean | number | string>(configId: string, name: string): T | undefined {
+    public getTreatmentVariable<T extends boolean | number | string>(
+        configId: string,
+        name: string,
+    ): T | undefined {
         this.featuresConsumed = true;
         this.PostEventToTelemetry(`${configId}.${name}`);
-        const config = this.features.configs.find(c => c.Id === configId);
+        const config = this.features.configs.find((c) => c.Id === configId);
         return config?.Parameters[name] as T;
     }
 
@@ -238,7 +251,11 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
      * @param name name of the treatment variable.
      * @param checkCache check the cache for the variable before calling the TAS.
      */
-    public async getTreatmentVariableAsync<T extends boolean | number | string>(configId: string, name: string, checkCache?: boolean): Promise<T | undefined> {
+    public async getTreatmentVariableAsync<T extends boolean | number | string>(
+        configId: string,
+        name: string,
+        checkCache?: boolean,
+    ): Promise<T | undefined> {
         if (checkCache) {
             const _featuresConsumed = this.featuresConsumed;
             const cachedValue = this.getTreatmentVariable<T>(configId, name);

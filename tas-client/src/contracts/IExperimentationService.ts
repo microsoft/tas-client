@@ -24,7 +24,7 @@ export interface IExperimentationService {
 
     /**
      * @deprecated Use `getTreatmentVariable` instead.
-     * 
+     *
      * Returns a value indicating whether the given flight is enabled.
      * It uses the values currently in memory, so the experimentation service
      * must be initialized before calling.
@@ -34,7 +34,7 @@ export interface IExperimentationService {
 
     /**
      * @deprecated Use `getTreatmentVariable` instead.
-     * 
+     *
      * Returns a value indicating whether the given flight is enabled.
      * It uses the values currently on cache.
      * @param flight The flight to check.
@@ -43,7 +43,7 @@ export interface IExperimentationService {
 
     /**
      * @deprecated Use `getTreatmentVariableAsync` instead.
-     * 
+     *
      * Returns a value indicating whether the given flight is enabled.
      * It re-fetches values from the server.
      * @param flight the flight to check.
@@ -57,7 +57,10 @@ export interface IExperimentationService {
      * @param config name of the config to check.
      * @param name name of the treatment variable.
      */
-    getTreatmentVariable<T extends boolean | number | string>(configId: string, name: string): T | undefined;
+    getTreatmentVariable<T extends boolean | number | string>(
+        configId: string,
+        name: string,
+    ): T | undefined;
 
     /**
      * Returns the value of the treatment variable, or undefined if not found.
@@ -67,5 +70,9 @@ export interface IExperimentationService {
      * @param name name of the treatment variable.
      * @param checkCache check the cache for the variable before calling the TAS.
      */
-    getTreatmentVariableAsync<T extends boolean | number | string>(configId: string, name: string, checkCache?: boolean): Promise<T | undefined>;
+    getTreatmentVariableAsync<T extends boolean | number | string>(
+        configId: string,
+        name: string,
+        checkCache?: boolean,
+    ): Promise<T | undefined>;
 }
