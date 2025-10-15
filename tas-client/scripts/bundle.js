@@ -1,5 +1,10 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
 import { build } from 'esbuild';
-import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { mkdirSync, copyFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,25 +15,25 @@ async function bundle() {
     const outDir = join(root, 'dist');
     mkdirSync(outDir, { recursive: true });
 
-    const commonOptions = {
+    // Build minified bundle
+    const result = await build({
         entryPoints: [join(root, 'src', 'index.ts')],
         bundle: true,
-        platform: 'neutral',
         format: 'iife',
         globalName: '__TasClientExports',
         target: 'es2022',
         metafile: true,
-        logLevel: 'info',
         banner: {
-            js: `(function (root, factory) {
+            js: `/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+(function (root, factory) {
     if (typeof define === 'function' && define.amd) {
-        // AMD
         define([], factory);
     } else if (typeof exports === 'object' && typeof module !== 'undefined') {
-        // CommonJS
         module.exports = factory();
     } else {
-        // Browser globals
         root.TasClient = factory();
     }
 }(typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this, function () {`
@@ -37,40 +42,26 @@ async function bundle() {
             js: `return __TasClientExports;
 }));`
         },
-        external: ['http', 'https']
-    };
-
-    // Build non-minified bundle
-    const result = await build({
-        ...commonOptions,
-        outfile: join(outDir, 'tas-client.js'),
-        sourcemap: true,
-        minify: false,
-        keepNames: true
-    });
-
-    const meta = result.metafile;
-    const outputs = Object.keys(meta.outputs);
-    const mainOutput = outputs.find(o => o.endsWith('tas-client.js'));
-    if (mainOutput) {
-        const size = meta.outputs[mainOutput].bytes;
-        console.log(`✓ Bundle created: ${mainOutput} (${(size / 1024).toFixed(2)} KB)`);
-    }
-
-    // Build minified bundle
-    const minResult = await build({
-        ...commonOptions,
+        external: ['http', 'https'],
         outfile: join(outDir, 'tas-client.min.js'),
         sourcemap: true,
         minify: true
     });
 
-    const minMeta = minResult.metafile;
-    const minOutputs = Object.keys(minMeta.outputs);
-    const minOutput = minOutputs.find(o => o.endsWith('tas-client.min.js'));
-    if (minOutput) {
-        const size = minMeta.outputs[minOutput].bytes;
-        console.log(`✓ Minified bundle created: ${minOutput} (${(size / 1024).toFixed(2)} KB)`);
+    const meta = result.metafile;
+    const outputs = Object.keys(meta.outputs);
+    const mainOutput = outputs.find(o => o.endsWith('tas-client.min.js'));
+    if (mainOutput) {
+        const size = meta.outputs[mainOutput].bytes;
+        console.log(`✓ Minified bundle created: ${mainOutput} (${(size / 1024).toFixed(2)} KB)`);
+    }
+
+    // Copy type declarations from out to dist
+    try {
+        copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
+        console.log('✓ Type declarations copied to dist/tas-client.d.ts');
+    } catch (err) {
+        console.warn('Warning: Could not copy type declarations. Make sure to run `npm run compile` first.');
     }
 }
 
