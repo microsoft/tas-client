@@ -41,6 +41,10 @@ extends:
             displayName: Compile Package
             workingDirectory: $(Build.SourcesDirectory)/tas-client
 
+          - script: npm run bundle
+            displayName: Bundle Package
+            workingDirectory: $(Build.SourcesDirectory)/tas-client
+
         testSteps:
           - script: npm i
             displayName: Install dependencies
