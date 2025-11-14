@@ -188,8 +188,9 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
      */
     public isFlightEnabled(flight: string): boolean {
         this.featuresConsumed = true;
-        this.PostEventToTelemetry(flight);
-        return this.features.features.includes(flight);
+        const isEnabled = this.features.features.includes(flight);
+        this.PostEventToTelemetry(flight, isEnabled);
+        return isEnabled;
     }
 
     /**
@@ -200,8 +201,9 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
     public async isCachedFlightEnabled(flight: string): Promise<boolean> {
         await this.loadCachePromise;
         this.featuresConsumed = true;
-        this.PostEventToTelemetry(flight);
-        return this.features.features.includes(flight);
+        const isEnabled = this.features.features.includes(flight);
+        this.PostEventToTelemetry(flight, isEnabled);
+        return isEnabled;
     }
 
     /**
@@ -212,8 +214,9 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
     public async isFlightEnabledAsync(flight: string): Promise<boolean> {
         const features = await this.getFeaturesAsync(true);
         this.featuresConsumed = true;
-        this.PostEventToTelemetry(flight);
-        return features.features.includes(flight);
+        const isEnabled = features.features.includes(flight);
+        this.PostEventToTelemetry(flight, isEnabled);
+        return isEnabled;
     }
 
     /**
@@ -225,9 +228,10 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
      */
     public getTreatmentVariable<T extends boolean | number | string>(configId: string, name: string): T | undefined {
         this.featuresConsumed = true;
-        this.PostEventToTelemetry(`${configId}.${name}`);
         const config = this.features.configs.find(c => c.Id === configId);
-        return config?.Parameters[name] as T;
+        const value = config?.Parameters[name] as T;
+        this.PostEventToTelemetry(`${configId}.${name}`, value);
+        return value;
     }
 
     /**
@@ -252,16 +256,22 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         return this.getTreatmentVariable<T>(configId, name);
     }
 
-    private PostEventToTelemetry(flight: string): void {
+    private PostEventToTelemetry(flight: string, featureValue?: boolean | number | string): void {
         /**
          * If this event has already been posted, we omit from posting it again.
          */
         if (this.cachedTelemetryEvents.includes(flight)) {
             return;
         }
+        
+        const telemetryProperties = new Map<string, string>([['ABExp.queriedFeature', flight]]);
+        if (featureValue !== undefined) {
+            telemetryProperties.set('abexp.featurevalue', String(featureValue));
+        }
+        
         this.telemetry.postEvent(
             this.telemetryEventName,
-            new Map<string, string>([['ABExp.queriedFeature', flight]]),
+            telemetryProperties,
         );
 
         /**
