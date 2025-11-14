@@ -1,48 +1,67 @@
+name: $(Date:yyyyMMdd)$(Rev:.r)
+
+trigger:
+  batch: true
+  branches:
+    include:
+      - main
+pr: none
+
 resources:
   repositories:
-  - repository: 1ESPipelineTemplates
-    type: git
-    name: 1ESPipelineTemplates/1ESPipelineTemplates
-    ref: refs/tags/release
+    - repository: templates
+      type: github
+      name: microsoft/vscode-engineering
+      ref: main
+      endpoint: Monaco
+
+parameters:
+  - name: publishPackage
+    displayName: 🚀 Publish vscode-tas-client
+    type: boolean
+    default: false
+
 extends:
-  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  template: azure-pipelines/npm-package/pipeline.yml@templates
   parameters:
-    settings:
-      skipBuildTagsForGitHubPullRequests: true
-    pool:
-      name: AzurePipelines-EO
-      image: 1ESPT-Windows2022
-      os: windows
-    stages:
-    - stage: stage
-      jobs:
-      - job: job
-        pool:
-          name: AzurePipelines-EO
-          image: 1ESPT-Ubuntu22.04
-          os: linux
-        templateContext:
-          outputs:
-          - output: pipelineArtifact
-            targetPath: './vscode-tas-client/out/pkg'
-        steps:
-        - task: NodeTool@0
-          inputs:
-            versionSpec: '18.x'
-          displayName: 'Install Node.js'
-        - script: npm install
-          workingDirectory: './vscode-tas-client'
-          displayName: 'npm install'
-        - script: npm run test-publish
-          displayName: 'Test Publish'
-          workingDirectory: './vscode-tas-client'
-        - bash: |
-            /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-            echo ">>> Started xvfb"
-          displayName: Start xvfb
-          condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
-        - bash: npm run test
-          displayName: 'Run tests'
-          workingDirectory: './vscode-tas-client'
-          env:
-            DISPLAY: ':99.0'
+    npmPackages:
+      - name: vscode-tas-client
+
+        testPlatforms:
+          - name: Linux
+            nodeVersions:
+              - 22.x
+
+        buildSteps:
+          - script: npm i
+            displayName: Install dependencies
+            workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
+
+          - script: npm run compile
+            displayName: Compile Extension
+            workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
+
+        testSteps:
+          - script: npm i
+            displayName: Install dependencies
+            workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
+
+          - script: npm run compile
+            displayName: Compile Extension
+            workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
+
+          - bash: |
+              /usr/bin/Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
+              echo "Started xvfb"
+            displayName: Start xvfb
+            condition: and(succeeded(), eq(variables['Agent.OS'], 'Linux'))
+
+          - bash: npm run test
+            displayName: Run VS Code Extension Tests
+            workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
+            env:
+              DISPLAY: ':99.0'
+
+        publishPackage: ${{ parameters.publishPackage }}
+        publishRequiresApproval: false
+        workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
