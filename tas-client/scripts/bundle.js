@@ -61,7 +61,7 @@ async function bundle() {
         copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
         console.log('✓ Type declarations copied to dist/tas-client.d.ts');
         
-        // Copy all supporting type declaration files using fs.globSync (Node.js 22+)
+        // Copy other declaration files which `tas-client.d.ts` may also reference.
         const outSrcDir = join(root, 'out', 'src');
         const dtsFiles = globSync('**/*.d.ts', { 
             cwd: outSrcDir,
