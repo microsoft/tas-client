@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { build } from 'esbuild';
-import { mkdirSync, copyFileSync } from 'fs';
+import { mkdirSync, copyFileSync, globSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -60,8 +60,27 @@ async function bundle() {
     try {
         copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
         console.log('✓ Type declarations copied to dist/tas-client.d.ts');
+        
+        // Copy other declaration files which `tas-client.d.ts` may also reference.
+        const outSrcDir = join(root, 'out', 'src');
+        const dtsFiles = globSync('**/*.d.ts', { 
+            cwd: outSrcDir,
+            ignore: 'index.d.ts'
+        });
+        
+        for (const file of dtsFiles) {
+            const srcPath = join(outSrcDir, file);
+            const destPath = join(outDir, file);
+            mkdirSync(dirname(destPath), { recursive: true });
+            copyFileSync(srcPath, destPath);
+        }
+        
+        if (dtsFiles.length > 0) {
+            console.log(`✓ Copied ${dtsFiles.length} supporting type declaration files to dist/`);
+        }
     } catch (err) {
         console.warn('Warning: Could not copy type declarations. Make sure to run `npm run compile` first.');
+        console.warn(err);
     }
 }
 

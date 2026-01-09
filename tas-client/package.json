@@ -19,6 +19,7 @@
       "default": "./dist/tas-client.min.js"
     },
     "./bundle": {
+      "types": "./dist/tas-client.d.ts",
       "default": "./dist/tas-client.min.js"
     }
   },
