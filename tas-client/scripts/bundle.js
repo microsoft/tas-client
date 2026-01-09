@@ -4,12 +4,28 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { build } from 'esbuild';
-import { mkdirSync, copyFileSync } from 'fs';
+import { mkdirSync, copyFileSync, readdirSync, statSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
+
+function copyDirRecursive(src, dest) {
+    mkdirSync(dest, { recursive: true });
+    const entries = readdirSync(src, { withFileTypes: true });
+    
+    for (const entry of entries) {
+        const srcPath = join(src, entry.name);
+        const destPath = join(dest, entry.name);
+        
+        if (entry.isDirectory()) {
+            copyDirRecursive(srcPath, destPath);
+        } else if (entry.isFile() && entry.name.endsWith('.d.ts')) {
+            copyFileSync(srcPath, destPath);
+        }
+    }
+}
 
 async function bundle() {
     const outDir = join(root, 'dist');
@@ -60,8 +76,24 @@ async function bundle() {
     try {
         copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
         console.log('✓ Type declarations copied to dist/tas-client.d.ts');
+        
+        // Copy all supporting type declaration files
+        const outSrcDir = join(root, 'out', 'src');
+        const contractsDir = join(outSrcDir, 'contracts');
+        const tasClientDir = join(outSrcDir, 'tas-client');
+        
+        if (statSync(contractsDir, { throwIfNoEntry: false })) {
+            copyDirRecursive(contractsDir, join(outDir, 'contracts'));
+            console.log('✓ Contract type declarations copied to dist/contracts/');
+        }
+        
+        if (statSync(tasClientDir, { throwIfNoEntry: false })) {
+            copyDirRecursive(tasClientDir, join(outDir, 'tas-client'));
+            console.log('✓ TAS client type declarations copied to dist/tas-client/');
+        }
     } catch (err) {
         console.warn('Warning: Could not copy type declarations. Make sure to run `npm run compile` first.');
+        console.warn(err);
     }
 }
 
