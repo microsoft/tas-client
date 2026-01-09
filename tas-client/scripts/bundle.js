@@ -4,31 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { build } from 'esbuild';
-import { mkdirSync, copyFileSync, readdirSync, existsSync } from 'fs';
+import { mkdirSync, copyFileSync, globSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
-
-function copyDirRecursive(src, dest) {
-    if (!existsSync(src)) {
-        return;
-    }
-    mkdirSync(dest, { recursive: true });
-    const entries = readdirSync(src, { withFileTypes: true });
-    
-    for (const entry of entries) {
-        const srcPath = join(src, entry.name);
-        const destPath = join(dest, entry.name);
-        
-        if (entry.isDirectory()) {
-            copyDirRecursive(srcPath, destPath);
-        } else if (entry.isFile() && entry.name.endsWith('.d.ts')) {
-            copyFileSync(srcPath, destPath);
-        }
-    }
-}
 
 async function bundle() {
     const outDir = join(root, 'dist');
@@ -80,19 +61,22 @@ async function bundle() {
         copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
         console.log('✓ Type declarations copied to dist/tas-client.d.ts');
         
-        // Copy all supporting type declaration files
+        // Copy all supporting type declaration files using fs.globSync (Node.js 22+)
         const outSrcDir = join(root, 'out', 'src');
-        const contractsDir = join(outSrcDir, 'contracts');
-        const tasClientDir = join(outSrcDir, 'tas-client');
+        const dtsFiles = globSync('**/*.d.ts', { 
+            cwd: outSrcDir,
+            ignore: 'index.d.ts'
+        });
         
-        if (existsSync(contractsDir)) {
-            copyDirRecursive(contractsDir, join(outDir, 'contracts'));
-            console.log('✓ Contract type declarations copied to dist/contracts/');
+        for (const file of dtsFiles) {
+            const srcPath = join(outSrcDir, file);
+            const destPath = join(outDir, file);
+            mkdirSync(dirname(destPath), { recursive: true });
+            copyFileSync(srcPath, destPath);
         }
         
-        if (existsSync(tasClientDir)) {
-            copyDirRecursive(tasClientDir, join(outDir, 'tas-client'));
-            console.log('✓ TAS client type declarations copied to dist/tas-client/');
+        if (dtsFiles.length > 0) {
+            console.log(`✓ Copied ${dtsFiles.length} supporting type declaration files to dist/`);
         }
     } catch (err) {
         console.warn('Warning: Could not copy type declarations. Make sure to run `npm run compile` first.');
