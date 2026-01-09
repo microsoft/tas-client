@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { build } from 'esbuild';
-import { mkdirSync, copyFileSync, readdirSync, statSync } from 'fs';
+import { mkdirSync, copyFileSync, readdirSync, existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -12,6 +12,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, '..');
 
 function copyDirRecursive(src, dest) {
+    if (!existsSync(src)) {
+        return;
+    }
     mkdirSync(dest, { recursive: true });
     const entries = readdirSync(src, { withFileTypes: true });
     
@@ -82,12 +85,12 @@ async function bundle() {
         const contractsDir = join(outSrcDir, 'contracts');
         const tasClientDir = join(outSrcDir, 'tas-client');
         
-        if (statSync(contractsDir, { throwIfNoEntry: false })) {
+        if (existsSync(contractsDir)) {
             copyDirRecursive(contractsDir, join(outDir, 'contracts'));
             console.log('✓ Contract type declarations copied to dist/contracts/');
         }
         
-        if (statSync(tasClientDir, { throwIfNoEntry: false })) {
+        if (existsSync(tasClientDir)) {
             copyDirRecursive(tasClientDir, join(outDir, 'tas-client'));
             console.log('✓ TAS client type declarations copied to dist/tas-client/');
         }
