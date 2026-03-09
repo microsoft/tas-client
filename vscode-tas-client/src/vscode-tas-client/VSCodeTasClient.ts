@@ -43,9 +43,10 @@ export function getExperimentationService(
     }
 
     const config = vscode.workspace.getConfiguration('telemetry');
-    const telemetryEnabled = vscode.env.isTelemetryEnabled === undefined
-                                ? config.get<boolean>('enableTelemetry', true)
-                                : vscode.env.isTelemetryEnabled;
+    const telemetryEnabled =
+        vscode.env.isTelemetryEnabled === undefined
+            ? config.get<boolean>('enableTelemetry', true)
+            : vscode.env.isTelemetryEnabled;
     if (!telemetryEnabled) {
         return new TelemetryDisabledExperimentationService();
     }
@@ -73,7 +74,7 @@ export function getExperimentationService(
 
 /**
  * Returns the experimentation service after waiting on initialize.
- * 
+ *
  * @param extensionName The name of the extension.
  * @param extensionVersion The version of the extension.
  * @param telemetry Telemetry implementation.
@@ -89,7 +90,14 @@ export async function getExperimentationServiceAsync(
     memento: vscode.Memento,
     ...filterProviders: IExperimentationFilterProvider[]
 ): Promise<IExperimentationService> {
-    const experimentationService = getExperimentationService(extensionName, extensionVersion, targetPopulation, telemetry, memento, ...filterProviders);
+    const experimentationService = getExperimentationService(
+        extensionName,
+        extensionVersion,
+        targetPopulation,
+        telemetry,
+        memento,
+        ...filterProviders,
+    );
     await experimentationService.initializePromise;
     return experimentationService;
 }
