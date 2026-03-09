@@ -49,6 +49,12 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         }
     }
 
+    public dispose(): void {
+        if (this.pollingService) {
+            this.pollingService.StopPolling();
+        }
+    }
+
     /**
      * Wrapper that will reset the polling intervals whenever the feature data is fetched manually.
      */

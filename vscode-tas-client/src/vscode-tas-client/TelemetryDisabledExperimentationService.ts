@@ -34,4 +34,8 @@ export default class TelemetryDisabledExperimentationService implements IExperim
     ): Promise<T | undefined> {
         return Promise.resolve(undefined);
     }
+
+    public dispose(): void {
+        // No-op: telemetry is disabled, nothing to clean up.
+    }
 }
