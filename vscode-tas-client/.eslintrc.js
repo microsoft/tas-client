@@ -10,14 +10,8 @@ module.exports = {
         project: './tsconfig.json',
     },
     extends: ['prettier'],
-    plugins: ['@typescript-eslint/tslint', 'prettier'],
+    plugins: ['prettier'],
     rules: {
         'prettier/prettier': 'error',
-        '@typescript-eslint/tslint/config': [
-            2,
-            {
-                lintFile: './tslint.json',
-            },
-        ],
     },
 };
