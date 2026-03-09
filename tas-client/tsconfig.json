@@ -21,7 +21,7 @@
       "declarationMap": true,
       "esModuleInterop": true,
       "allowSyntheticDefaultImports": true,
-      "types": ["vitest/globals"],
+      "types": ["vitest/globals", "node"],
       "skipLibCheck": true
   },
   "exclude": [
