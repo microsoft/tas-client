@@ -20,6 +20,8 @@
   "exclude": [
       "node_modules",
       "out",
-      ".vscode-test"
+      ".vscode-test",
+      "test",
+      "vitest.config.ts"
   ]
 }
