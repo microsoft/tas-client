@@ -68,4 +68,9 @@ export interface IExperimentationService {
      * @param checkCache check the cache for the variable before calling the TAS.
      */
     getTreatmentVariableAsync<T extends boolean | number | string>(configId: string, name: string, checkCache?: boolean): Promise<T | undefined>;
+
+    /**
+     * Disposes the experimentation service and stops any ongoing polling.
+     */
+    dispose(): void;
 }

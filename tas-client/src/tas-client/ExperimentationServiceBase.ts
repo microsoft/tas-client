@@ -290,4 +290,8 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             this.featureProviders!.push(provider);
         }
     }
+
+    public dispose(): void {
+        // Base implementation is a no-op. Subclasses can override to clean up resources.
+    }
 }

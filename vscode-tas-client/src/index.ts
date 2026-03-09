@@ -9,5 +9,8 @@ export {
     IExperimentationTelemetry,
     IExperimentationFilterProvider,
 } from 'tas-client';
-export { getExperimentationService, getExperimentationServiceAsync } from './vscode-tas-client/VSCodeTasClient';
+export {
+    getExperimentationService,
+    getExperimentationServiceAsync,
+} from './vscode-tas-client/VSCodeTasClient';
 export { TargetPopulation } from './vscode-tas-client/VSCodeFilterProvider';
