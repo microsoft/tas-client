@@ -30,6 +30,20 @@ async function bundle() {
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/`;
 
+    const iifeHeader = `
+(function (root, factory) {
+    if (typeof define === 'function' && define.amd) {
+        define([], factory);
+    } else if (typeof exports === 'object' && typeof module !== 'undefined') {
+        module.exports = factory();
+    } else {
+        root.TasClient = factory();
+    }
+}(typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this, function () {`;
+
+    const iifeFooter = `return __TasClientExports;
+}));`
+
     // Build ESM bundle
     const esmResult = await build({
         ...sharedOptions,
@@ -48,8 +62,12 @@ async function bundle() {
     // Build CJS bundle
     const cjsResult = await build({
         ...sharedOptions,
-        format: 'cjs',
-        banner: { js: copyright },
+        format: 'iife',
+        globalName: '__TasClientExports',
+        banner: { js: copyright + iifeHeader },
+        footer: {
+            js: iifeFooter
+        },
         outfile: join(outDir, 'tas-client.min.cjs'),
     });
 
