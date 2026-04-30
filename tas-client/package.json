@@ -6,7 +6,8 @@
     "node": ">=22"
   },
   "description": "This package is intended to be used as an endpoint client to query, refetch, and cache data from the Experimentation service (or any given endpoint). The endpoint result must follow the required structure for experimentation data.",
-  "main": "./dist/tas-client.min.js",
+  "main": "./dist/tas-client.min.cjs",
+  "module": "./dist/tas-client.min.js",
   "types": "./dist/tas-client.d.ts",
   "files": [
     "dist/**/*",
@@ -15,12 +16,24 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/tas-client.d.ts",
-      "default": "./dist/tas-client.min.js"
+      "import": {
+        "types": "./dist/tas-client.d.ts",
+        "default": "./dist/tas-client.min.js"
+      },
+      "require": {
+        "types": "./dist/tas-client.d.cts",
+        "default": "./dist/tas-client.min.cjs"
+      }
     },
     "./bundle": {
-      "types": "./dist/tas-client.d.ts",
-      "default": "./dist/tas-client.min.js"
+      "import": {
+        "types": "./dist/tas-client.d.ts",
+        "default": "./dist/tas-client.min.js"
+      },
+      "require": {
+        "types": "./dist/tas-client.d.cts",
+        "default": "./dist/tas-client.min.cjs"
+      }
     }
   },
   "scripts": {
