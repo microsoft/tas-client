@@ -10,7 +10,6 @@
       ],
       "sourceMap": true,
       "rootDir": ".",
-      "baseUrl": ".",
       "experimentalDecorators": true,
       "strict": true,
       "strictNullChecks": true,
