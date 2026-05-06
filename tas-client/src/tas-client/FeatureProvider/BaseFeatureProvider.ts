@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IFeatureProvider, FeatureData } from './IFeatureProvider.js';
-import { IExperimentationTelemetry } from 'src/contracts/IExperimentationTelemetry.js';
+import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry.js';
 
 /**
  * Abstract class for Feature Provider Implementation.
