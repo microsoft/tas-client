@@ -15,38 +15,20 @@ async function bundle() {
     const outDir = join(root, 'dist');
     mkdirSync(outDir, { recursive: true });
 
-    const sharedOptions = {
+    const copyright = `/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/`;
+
+    // Build ESM bundle
+    const esmResult = await build({
         entryPoints: [join(root, 'src', 'index.ts')],
         bundle: true,
         target: 'es2022',
         metafile: true,
         external: ['http', 'https'],
         sourcemap: true,
-        minify: true
-    };
-
-    const copyright = `/*---------------------------------------------------------------------------------------------
- *  Copyright (c) Microsoft Corporation. All rights reserved.
- *  Licensed under the MIT License. See License.txt in the project root for license information.
- *--------------------------------------------------------------------------------------------*/`;
-
-    const iifeHeader = `
-(function (root, factory) {
-    if (typeof define === 'function' && define.amd) {
-        define([], factory);
-    } else if (typeof exports === 'object' && typeof module !== 'undefined') {
-        module.exports = factory();
-    } else {
-        root.TasClient = factory();
-    }
-}(typeof self !== 'undefined' ? self : typeof global !== 'undefined' ? global : this, function () {`;
-
-    const iifeFooter = `return __TasClientExports;
-}));`
-
-    // Build ESM bundle
-    const esmResult = await build({
-        ...sharedOptions,
+        minify: true,
         format: 'esm',
         banner: { js: copyright },
         outfile: join(outDir, 'tas-client.min.js'),
@@ -59,30 +41,10 @@ async function bundle() {
         console.log(`✓ ESM bundle created: ${esmOutput} (${(size / 1024).toFixed(2)} KB)`);
     }
 
-    // Build CJS bundle
-    const cjsResult = await build({
-        ...sharedOptions,
-        format: 'iife',
-        globalName: '__TasClientExports',
-        banner: { js: copyright + iifeHeader },
-        footer: {
-            js: iifeFooter
-        },
-        outfile: join(outDir, 'tas-client.min.cjs'),
-    });
-
-    const cjsOutputs = Object.keys(cjsResult.metafile.outputs);
-    const cjsOutput = cjsOutputs.find(o => o.endsWith('tas-client.min.cjs'));
-    if (cjsOutput) {
-        const size = cjsResult.metafile.outputs[cjsOutput].bytes;
-        console.log(`✓ CJS bundle created: ${cjsOutput} (${(size / 1024).toFixed(2)} KB)`);
-    }
-
     // Copy type declarations from out to dist
     try {
         copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.ts'));
-        copyFileSync(join(root, 'out', 'src', 'index.d.ts'), join(outDir, 'tas-client.d.cts'));
-        console.log('✓ Type declarations copied to dist/tas-client.d.ts and dist/tas-client.d.cts');
+        console.log('✓ Type declarations copied to dist/tas-client.d.ts');
         
         // Copy other declaration files which `tas-client.d.ts` may also reference.
         const outSrcDir = join(root, 'out', 'src');
