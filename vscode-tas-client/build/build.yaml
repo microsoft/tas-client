@@ -63,5 +63,6 @@ extends:
               DISPLAY: ':99.0'
 
         publishPackage: ${{ parameters.publishPackage }}
+        ghTagPrefix: vscode-tas-client/
         publishRequiresApproval: false
         workingDirectory: $(Build.SourcesDirectory)/vscode-tas-client
