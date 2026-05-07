@@ -33,7 +33,7 @@ extends:
               - 22.x
 
         buildSteps:
-          - script: npm i
+          - script: npm ci
             displayName: Install dependencies
             workingDirectory: $(Build.SourcesDirectory)/tas-client
 
@@ -46,7 +46,7 @@ extends:
             workingDirectory: $(Build.SourcesDirectory)/tas-client
 
         testSteps:
-          - script: npm i
+          - script: npm ci
             displayName: Install dependencies
             workingDirectory: $(Build.SourcesDirectory)/tas-client
 
