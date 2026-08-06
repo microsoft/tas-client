@@ -79,4 +79,26 @@ describe('HttpClient Tests', () => {
         expect(result.data.headers['echo-header']).toBe('echo-http');
         expect(result.data.headers['user-agent']).toBe(undefined); // only set with fetch
     });
+
+    it('should POST a JSON body using fetch', async () => {
+        const path = '/api/v1/assignments';
+        const client = new HttpClient(`http://127.0.0.1:${port}${path}`, false);
+        const body = { userParams: { 'X-VSCode-Build': 'insider' } };
+        const result = await client.post({ body });
+        expect(result.data.method).toBe('POST');
+        expect(result.data.url).toBe(path);
+        expect(result.data.headers['content-type']).toBe('application/json');
+        expect(JSON.parse(result.data.data)).toEqual(body);
+    });
+
+    it('should POST a JSON body using Node.js modules', async () => {
+        const path = '/api/v1/assignments';
+        const client = new HttpClient(`http://127.0.0.1:${port}${path}`, true);
+        const body = { userParams: { 'X-VSCode-Build': 'insider' } };
+        const result = await client.post({ body });
+        expect(result.data.method).toBe('POST');
+        expect(result.data.url).toBe(path);
+        expect(result.data.headers['content-type']).toBe('application/json');
+        expect(JSON.parse(result.data.data)).toEqual(body);
+    });
 });
