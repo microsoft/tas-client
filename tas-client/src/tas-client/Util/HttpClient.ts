@@ -7,6 +7,10 @@ export interface RequestConfig {
     headers?: Record<string, string>;
 }
 
+export interface PostRequestConfig extends RequestConfig {
+    body?: unknown;
+}
+
 export interface FetchResult {
     data: any;
 }
@@ -32,6 +36,14 @@ export class HttpClient {
             return this.nodeGet(config);
         } else {
             return this.webGet(config);
+        }
+    }
+
+    public async post(config?: PostRequestConfig | undefined): Promise<FetchResult> {
+        if (this.useNodeModules) {
+            return this.nodePost(config);
+        } else {
+            return this.webPost(config);
         }
     }
 
@@ -73,6 +85,72 @@ export class HttpClient {
         const response = await fetch(this.endpoint, {
             method: 'GET',
             headers: config?.headers,
+        });
+
+        if (!response) {
+            throw new FetchError('No response received', false);
+        }
+
+        if (!response.ok) {
+            throw new FetchError('Response not ok', true, false);
+        }
+
+        const data = await response.json();
+        if (!data) {
+            throw new FetchError('No data received', false);
+        }
+        return { data };
+    }
+
+    private async nodePost(config?: PostRequestConfig | undefined): Promise<FetchResult> {
+        const http = await import('http');
+        const https = await import('https');
+        const payload = JSON.stringify(config?.body ?? {});
+        return new Promise<FetchResult>((resolve, reject) => {
+            const headers: Record<string, string> = {
+                'Content-Type': 'application/json',
+                'Content-Length': Buffer.byteLength(payload).toString(),
+                ...(config?.headers || {}),
+            };
+            const req = (this.endpoint.startsWith('http:') ? http : https).request(
+                this.endpoint,
+                { method: 'POST', headers },
+                (res) => {
+                    if (res.statusCode! < 200 || res.statusCode! > 299) {
+                        reject(new FetchError('Response not ok', true, false));
+                    } else {
+                        res.on('error', reject);
+                        const chunks: Buffer[] = [];
+                        res.on('data', (chunk) => chunks.push(chunk));
+                        res.on('end', () => {
+                            try {
+                                const data = JSON.parse(Buffer.concat(chunks).toString());
+                                if (!data) {
+                                    reject(new FetchError('No data received', false));
+                                } else {
+                                    resolve({ data });
+                                }
+                            } catch (err) {
+                                reject(err);
+                            }
+                        });
+                    }
+                },
+            );
+            req.on('error', reject);
+            req.write(payload);
+            req.end();
+        });
+    }
+
+    private async webPost(config?: PostRequestConfig | undefined): Promise<FetchResult> {
+        const response = await fetch(this.endpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(config?.headers || {}),
+            },
+            body: JSON.stringify(config?.body ?? {}),
         });
 
         if (!response) {

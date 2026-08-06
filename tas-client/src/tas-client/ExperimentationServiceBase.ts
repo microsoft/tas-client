@@ -105,7 +105,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         } catch {
             // Fetching features threw error. Can happen if not connected to the internet, e.g.
         }
-        
+
         this.fetchPromise = undefined;
 
         if (this.resolveInitialFetchPromise) {
@@ -149,7 +149,14 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
                     features.configs.push(config);
                 }
             }
-            features.assignmentContext += result.assignmentContext;
+            if (result.assignmentContext) {
+                // Join contexts from multiple providers with a ';' so downstream consumers
+                // that split on ';' do not merge two providers' segments into one token.
+                if (features.assignmentContext && !features.assignmentContext.endsWith(';')) {
+                    features.assignmentContext += ';';
+                }
+                features.assignmentContext += result.assignmentContext;
+            }
         }
 
         /**
@@ -171,7 +178,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         let cachedFeatureData: FeatureData | undefined;
         if (this.storage) {
             cachedFeatureData = await this.storage.getValue<FeatureData>(this.storageKey!);
-            // When updating from an older version of tas-client, configs may be undefined 
+            // When updating from an older version of tas-client, configs may be undefined
             if (cachedFeatureData !== undefined && cachedFeatureData.configs === undefined) {
                 cachedFeatureData.configs = [];
             }
