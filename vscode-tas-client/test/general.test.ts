@@ -19,6 +19,10 @@ import {
     TargetPopulation,
     Filters,
 } from '../src/vscode-tas-client/VSCodeFilterProvider';
+import {
+    VSCodeAssignmentsFilterProvider,
+    AssignmentsFilters,
+} from '../src/vscode-tas-client/VSCodeAssignmentsFilterProvider';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -51,6 +55,34 @@ describe('General Tests', () => {
         );
         const filter = filterProvider.getFilterValue(Filters.ExtensionVersion);
         expect(filter).toBe('1.2.3');
+    });
+});
+
+describe('VSCodeAssignmentsFilterProvider Tests', () => {
+    it('Should emit the assignments-API parameter names with expected values', () => {
+        const filterProvider = new VSCodeAssignmentsFilterProvider(
+            'extension_name',
+            TargetPopulation.Internal,
+        );
+        const filters = filterProvider.getFilters();
+
+        expect(filters.get(AssignmentsFilters.ApplicationVersion)).toBe('1.85.0');
+        expect(filters.get(AssignmentsFilters.Build)).toBe('Visual Studio Code');
+        expect(filters.get(AssignmentsFilters.ExtensionName)).toBe('extension_name');
+        expect(filters.get(AssignmentsFilters.ExtensionNameShort)).toBe('extension_name');
+        expect(filters.get(AssignmentsFilters.TargetPopulation)).toBe('internal');
+    });
+
+    it('Should not emit any legacy header-style keys', () => {
+        const filterProvider = new VSCodeAssignmentsFilterProvider(
+            'extension_name',
+            TargetPopulation.Internal,
+        );
+        const filters = filterProvider.getFilters();
+
+        for (const key of filters.keys()) {
+            expect(key.startsWith('X-')).toBe(false);
+        }
     });
 });
 

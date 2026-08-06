@@ -1,6 +1,6 @@
 {
   "name": "vscode-tas-client",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "",
   "main": "./out/index.js",
   "types": "./out/index.d.ts",
@@ -37,6 +37,6 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "tas-client": "^0.4.0"
+    "tas-client": "^0.4.2"
   }
 }
