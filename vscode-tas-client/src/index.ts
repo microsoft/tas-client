@@ -8,9 +8,17 @@ export {
     IExperimentationService,
     IExperimentationTelemetry,
     IExperimentationFilterProvider,
+    AssignmentsFetchFn,
+    IAssignmentsFetchResponse,
 } from 'tas-client';
 export {
     getExperimentationService,
     getExperimentationServiceAsync,
+    getExperimentationServiceFromConfig,
+    ExperimentationConfig,
 } from './vscode-tas-client/VSCodeTasClient';
 export { TargetPopulation } from './vscode-tas-client/VSCodeFilterProvider';
+export {
+    VSCodeAssignmentsFilterProvider,
+    AssignmentsFilters,
+} from './vscode-tas-client/VSCodeAssignmentsFilterProvider';
