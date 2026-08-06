@@ -5,6 +5,7 @@
 
 import { IFeatureProvider } from './FeatureProvider/IFeatureProvider.js';
 import { TasApiFeatureProvider } from './FeatureProvider/TasApiFeatureProvider.js';
+import { AssignmentsApiFeatureProvider } from './FeatureProvider/AssignmentsApiFeatureProvider.js';
 import { HttpClient } from './Util/HttpClient.js';
 import { ExperimentationServiceConfig } from '../contracts/ExperimentationServiceConfig.js';
 import { ExperimentationServiceAutoPolling } from './ExperimentationServiceAutoPolling.js';
@@ -25,7 +26,7 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
             options.refetchInterval != null
                 ? options.refetchInterval
                 : // If no fetch interval is provided, refetch functionality is turned off.
-                  0,
+                0,
             options.assignmentContextTelemetryPropertyName,
             options.telemetryEventName,
             options.storageKey,
@@ -46,6 +47,23 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
                 this.filterProviders,
             ),
         );
+
+        // If a new assignments endpoint is configured, add a provider that calls the new
+        // TAS assignments API in parallel and whose assignments are merged with the legacy
+        // provider's results (new values win for overlapping variables). It uses its own
+        // filter providers (which emit the new assignments-API parameter names) so the
+        // legacy keys never reach it.
+        if (this.options.assignmentsEndpoint) {
+            this.addFeatureProvider(
+                new AssignmentsApiFeatureProvider(
+                    new HttpClient(this.options.assignmentsEndpoint),
+                    this.telemetry,
+                    this.options.assignmentsFilterProviders ?? this.filterProviders,
+                    this.options.assignmentsEndpoint,
+                    this.options.assignmentsFetch,
+                ),
+            );
+        }
 
         // This will start polling the TAS.
         super.init();
