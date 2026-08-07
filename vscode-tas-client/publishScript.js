@@ -45,6 +45,11 @@ async function copyPackageContents() {
     const destinationFile = path.join(outDir, 'package.json');
     await util.promisify(fs.copyFile)(sourceFile, destinationFile);
     console.log('package.json copied successfully to outDir');
+    await util.promisify(fs.copyFile)(
+        path.join(__dirname, 'tsconfig.json'),
+        path.join(outDir, 'tsconfig.json'),
+    );
+    console.log('tsconfig.json copied successfully to outDir');
     // Also copy .npmignore file if it exists
     const npmIgnoreFile = path.join(__dirname, '.npmignore');
     if (fs.existsSync(npmIgnoreFile)) {
