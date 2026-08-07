@@ -11,7 +11,8 @@
   "files": [
     "dist/**/*",
     "README.md",
-    "LICENSE.txt"
+    "LICENSE.txt",
+    "tsconfig.json"
   ],
   "exports": {
     ".": {
@@ -26,7 +27,7 @@
   "scripts": {
     "compile": "tsc -p ./",
     "bundle": "node scripts/bundle.js",
-    "prepublishOnly": "npm run compile && npm run bundle",
+    "prepublishOnly": "node scripts/checkTsconfig.js && npm run compile && npm run bundle",
     "eslint": "eslint src --ext ts",
     "watch": "tsc -watch -p ./",
     "test": "vitest run",
