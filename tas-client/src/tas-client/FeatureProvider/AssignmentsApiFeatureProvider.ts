@@ -12,6 +12,7 @@ import { FeatureData } from './IFeatureProvider.js';
 
 export const ASSIGNMENTS_FETCHERROR_EVENTNAME = 'call-assignments-error';
 export const ASSIGNMENTS_VALIDATION_EVENTNAME = 'assignments-validation';
+export const TAS_CALL_EVENTNAME = 'tas-call';
 const ERROR_TYPE = 'ErrorType';
 
 /**
@@ -36,6 +37,7 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
         protected filterProviders: IExperimentationFilterProvider[],
         protected endpoint?: string,
         protected fetchFn?: AssignmentsFetchFn,
+        protected extensionName?: string,
     ) {
         super(telemetry, filterProviders);
     }
@@ -100,6 +102,8 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
         } catch {
             // Validation telemetry must never affect feature assignment.
         }
+
+        this.postCallTelemetry('Success', responseData.assignmentContext || '');
 
         // Merge the new endpoint's assignments into the active feature set.
         return AssignmentsApiFeatureProvider.toFeatureData(responseData);
@@ -174,14 +178,27 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
 
     private postErrorTelemetry(fetchError: FetchError): void {
         const properties: Map<string, string> = new Map();
+        let outcome: string;
         if (fetchError.responseReceived && !fetchError.responseOk) {
-            properties.set(ERROR_TYPE, 'ServerError');
+            outcome = 'ServerError';
         } else if (fetchError.responseReceived === false) {
-            properties.set(ERROR_TYPE, 'NoResponse');
+            outcome = 'NoResponse';
         } else {
-            properties.set(ERROR_TYPE, 'GenericError');
+            outcome = 'GenericError';
         }
+        properties.set(ERROR_TYPE, outcome);
         this.telemetry.postEvent(ASSIGNMENTS_FETCHERROR_EVENTNAME, properties);
+        this.postCallTelemetry(outcome);
+    }
+
+    /** Emits a uniform per-call event so callers can confirm a new-TAS call and its outcome. */
+    private postCallTelemetry(outcome: string, assignmentContext: string = ''): void {
+        const properties: Map<string, string> = new Map();
+        properties.set('callType', 'assignments');
+        properties.set('outcome', outcome);
+        properties.set('extensionName', this.extensionName ?? '');
+        properties.set('assignmentContext', assignmentContext);
+        this.telemetry.postEvent(TAS_CALL_EVENTNAME, properties);
     }
 }
 

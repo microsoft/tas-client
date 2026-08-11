@@ -257,10 +257,10 @@ describe('Assignments Api Feature Provider Tests', () => {
         let calledInit: { method: string; headers: Record<string, string>; body: string } | undefined;
         const fetchFn = async (
             url: string,
-            init: { method: 'POST'; headers: Record<string, string>; body: string },
+            init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
         ) => {
             calledUrl = url;
-            calledInit = init;
+            calledInit = init as typeof calledInit;
             return { status: 200, json: async () => responseData };
         };
 
