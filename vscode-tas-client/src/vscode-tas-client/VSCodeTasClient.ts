@@ -10,6 +10,7 @@ import {
     IExperimentationTelemetry,
     IExperimentationFilterProvider,
     AssignmentsFetchFn,
+    FetchFn,
 } from 'tas-client';
 import * as vscode from 'vscode';
 import { MementoKeyValueStorage } from './MementoKeyValueStorage';
@@ -52,6 +53,12 @@ export interface ExperimentationConfig {
      * service), used instead of the built-in HTTP client for that request.
      */
     assignmentsFetch?: AssignmentsFetchFn;
+    /**
+     * Optional custom transport used for both the legacy endpoint (GET) and the assignments
+     * endpoint (POST) (e.g. the VS Code fetcher service), so both requests get proxy handling.
+     * A per-endpoint {@link assignmentsFetch}, if set, takes precedence for assignments.
+     */
+    fetch?: FetchFn;
 }
 
 /**
@@ -98,6 +105,8 @@ export function getExperimentationServiceFromConfig(
         assignmentContextTelemetryPropertyName: assignmentContextTelemetryPropertyName,
         telemetryEventName: telemetryEventName,
         endpoint: endpoint,
+        extensionName: config.extensionName,
+        fetch: config.fetch,
         assignmentsEndpoint: config.assignmentsEndpoint,
         assignmentsFilterProviders: assignmentsFilterProviders,
         assignmentsFetch: config.assignmentsFetch,
