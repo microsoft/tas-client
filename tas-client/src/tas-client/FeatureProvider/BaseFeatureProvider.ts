@@ -16,7 +16,7 @@ export abstract class BaseFeatureProvider implements IFeatureProvider {
     /**
      * @param telemetry The telemetry implementation.
      */
-    constructor(protected telemetry: IExperimentationTelemetry) {}
+    constructor(protected telemetry: IExperimentationTelemetry) { }
 
     /**
      * Method that wraps the fetch method in order to re-use the fetch promise if needed.
@@ -27,12 +27,15 @@ export abstract class BaseFeatureProvider implements IFeatureProvider {
             return this.fetchPromise;
         }
 
+        this.isFetching = true;
         this.fetchPromise = this.fetch();
-        let features = await this.fetchPromise;
-        this.isFetching = false;
-        this.fetchPromise = undefined;
-
-        return features;
+        try {
+            return await this.fetchPromise;
+        } finally {
+            // Reset even if the fetch rejected, so a failed cycle doesn't wedge future fetches.
+            this.isFetching = false;
+            this.fetchPromise = undefined;
+        }
     }
 
     /**

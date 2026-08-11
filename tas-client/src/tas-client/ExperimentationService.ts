@@ -45,6 +45,9 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
                 new HttpClient(this.options.endpoint),
                 this.telemetry,
                 this.filterProviders,
+                this.options.endpoint,
+                this.options.fetch,
+                this.options.extensionName,
             ),
         );
 
@@ -60,7 +63,8 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
                     this.telemetry,
                     this.options.assignmentsFilterProviders ?? this.filterProviders,
                     this.options.assignmentsEndpoint,
-                    this.options.assignmentsFetch,
+                    this.options.assignmentsFetch ?? this.options.fetch,
+                    this.options.extensionName,
                 ),
             );
         }

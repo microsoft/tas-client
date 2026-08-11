@@ -17,7 +17,7 @@ import { MemoryKeyValueStorage } from './Util/MemoryKeyValueStorage.js';
  */
 export abstract class ExperimentationServiceBase implements IExperimentationService {
     protected featureProviders?: IFeatureProvider[];
-    protected fetchPromise?: Promise<FeatureData[]>;
+    protected fetchPromise?: Promise<(FeatureData | undefined)[]>;
     protected featuresConsumed = false;
     private loadCachePromise: Promise<void>;
     public readonly initializePromise: Promise<void>;
@@ -93,15 +93,28 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
 
         try {
             /**
-             * Fetch all from providers.
+             * Fetch all from providers. Provider failures are isolated so that one provider
+             * (e.g. the legacy TAS endpoint) rejecting cannot discard the results of the
+             * others (e.g. the new assignments endpoint). A provider that fails contributes
+             * `undefined` and is skipped during the merge.
              */
             this.fetchPromise = Promise.all(
-                this.featureProviders.map(async (provider) => {
-                    return await provider.getFeatures();
-                }),
+                this.featureProviders.map((provider) =>
+                    provider.getFeatures().then(
+                        (data) => data,
+                        () => undefined,
+                    ),
+                ),
             );
             const featureResults = await this.fetchPromise;
-            this.updateFeatures(featureResults, overrideInMemoryFeatures);
+            const successfulResults = featureResults.filter(
+                (result): result is FeatureData => result !== undefined,
+            );
+            // Only update when at least one provider succeeded, so a total failure keeps
+            // the previously cached features instead of clobbering them with empty data.
+            if (successfulResults.length > 0) {
+                this.updateFeatures(successfulResults, overrideInMemoryFeatures);
+            }
         } catch {
             // Fetching features threw error. Can happen if not connected to the internet, e.g.
         }
