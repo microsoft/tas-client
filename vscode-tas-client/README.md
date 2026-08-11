@@ -39,11 +39,11 @@ A few examples to clarify:
 - *Your extension calls `getExperimentationServiceAsync` and then ~1 minute later calls `getTreatmentVariable`*. vscode-tas-client will make a request to the TAS as soon as you call `getExperimentationServiceAsync`. Because this request completes before the call to `getExperimentationService`, the freshly fetched data is used.
 
 
-# 0.4.3
+# 0.3.1
 
 ## Custom transport & call telemetry
 
-`getExperimentationServiceFromConfig` accepts two optional fields:
+`getExperimentationServiceFromConfig` accepts an optional `fetch` field and uses its existing required `extensionName` field for call telemetry:
 
 - `fetch` — a custom transport used for **both** the legacy and assignments endpoints, letting you route TAS requests through your own (e.g. proxy-aware) networking stack instead of the built-in HTTP client. A per-endpoint `assignmentsFetch` still overrides it for the assignments request.
 - `extensionName` — a caller name attached to the `tas-call` telemetry event, which reports `callType` (`legacy`/`assignments`), `outcome`, `extensionName`, and the call's `assignmentContext` for each TAS call.

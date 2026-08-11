@@ -10,6 +10,8 @@ export {
     IExperimentationFilterProvider,
     AssignmentsFetchFn,
     IAssignmentsFetchResponse,
+    FetchFn,
+    IFetchResponse,
 } from 'tas-client';
 export {
     getExperimentationService,
