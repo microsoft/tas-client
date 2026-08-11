@@ -21,9 +21,10 @@ const ERROR_TYPE = 'ErrorType';
  *
  * Its parsed assignments are merged with the legacy provider's results by the base
  * service: because this provider is registered after the legacy one, variables from the
- * new endpoint override/augment the legacy ones for the same config. On any failure it
- * resolves with empty feature data and never throws, so a problem with the new endpoint
- * cannot wipe out the legacy (authoritative) provider's results.
+ * new endpoint override/augment the legacy ones for the same config. On failure it rejects;
+ * the base service isolates per-provider failures, so a failed new-endpoint call neither
+ * wipes out the legacy (authoritative) provider's results nor is treated as a successful
+ * empty result that could overwrite cached features.
  */
 export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
     /**
@@ -50,8 +51,9 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
 
     /**
      * Calls the new assignments API and returns its assignments as feature data to be
-     * merged with the legacy provider. Never throws; on any failure it returns empty
-     * feature data so the legacy provider's results are preserved.
+     * merged with the legacy provider. Returns empty feature data when there are no user
+     * params to send (a valid no-op); rejects on any transport, parse, or conversion
+     * failure so the base service excludes it from the merge.
      */
     public async fetch(): Promise<FeatureData> {
         const userParams = this.buildUserParams();
@@ -63,8 +65,8 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
 
         const requestBody: AssignmentRequest = { userParams };
 
-        let responseData: AssignmentResponse;
         try {
+            let responseData: AssignmentResponse;
             if (this.fetchFn) {
                 // Host-provided transport (e.g. VS Code fetcher service).
                 const res = await this.fetchFn(this.endpoint!, {
@@ -73,40 +75,50 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
                     body: JSON.stringify(requestBody),
                 });
                 if (res.status < 200 || res.status > 299) {
-                    this.postErrorTelemetry(new FetchError('Response not ok', true, false));
-                    return AssignmentsApiFeatureProvider.EMPTY_FEATURE_DATA;
+                    throw new FetchError('Response not ok', true, false);
                 }
                 responseData = (await res.json()) as AssignmentResponse;
             } else {
                 const response: FetchResult = await this.httpClient.post({ body: requestBody });
                 responseData = response.data as AssignmentResponse;
             }
+
+            if (!responseData) {
+                throw new FetchError('No data received', false);
+            }
+
+            // Convert inside the guarded path so a malformed response is treated as a
+            // failure (rejects) rather than being reported as a successful empty result.
+            const featureData = AssignmentsApiFeatureProvider.toFeatureData(responseData);
+
+            try {
+                const properties: Map<string, string> = new Map();
+                properties.set(
+                    'FeatureVariableCount',
+                    String(Object.keys(responseData.featureVariables || {}).length),
+                );
+                properties.set(
+                    'AssignedVariantCount',
+                    String((responseData.assignedVariants || []).length),
+                );
+                properties.set('DataVersion', String(responseData.dataVersion));
+                properties.set('AssignmentContext', responseData.assignmentContext || '');
+                this.telemetry.postEvent(ASSIGNMENTS_VALIDATION_EVENTNAME, properties);
+            } catch {
+                // Validation telemetry must never affect feature assignment.
+            }
+
+            // Report success only after the response has been converted.
+            this.postCallTelemetry('Success', responseData.assignmentContext || '');
+
+            return featureData;
         } catch (error) {
             this.postErrorTelemetry(error as FetchError);
-            return AssignmentsApiFeatureProvider.EMPTY_FEATURE_DATA;
+            // Reject so the service's fault-isolation excludes this provider. A failed
+            // assignments call must not be treated as an empty-but-successful result that
+            // could overwrite cached features when the legacy provider also fails.
+            throw error;
         }
-
-        try {
-            const properties: Map<string, string> = new Map();
-            properties.set(
-                'FeatureVariableCount',
-                String(Object.keys(responseData.featureVariables || {}).length),
-            );
-            properties.set(
-                'AssignedVariantCount',
-                String((responseData.assignedVariants || []).length),
-            );
-            properties.set('DataVersion', String(responseData.dataVersion));
-            properties.set('AssignmentContext', responseData.assignmentContext || '');
-            this.telemetry.postEvent(ASSIGNMENTS_VALIDATION_EVENTNAME, properties);
-        } catch {
-            // Validation telemetry must never affect feature assignment.
-        }
-
-        this.postCallTelemetry('Success', responseData.assignmentContext || '');
-
-        // Merge the new endpoint's assignments into the active feature set.
-        return AssignmentsApiFeatureProvider.toFeatureData(responseData);
     }
 
     /**

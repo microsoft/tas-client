@@ -151,7 +151,7 @@ describe('Assignments Api Feature Provider Tests', () => {
         expect(result).toEqual({ features: [], assignmentContext: '', configs: [] });
     });
 
-    it('Should swallow errors, emit error telemetry and return empty data (shadow-safe).', async () => {
+    it('Should emit error telemetry and reject when the request fails.', async () => {
         const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
         const fetchError = new FetchError('ServerError', true, false);
@@ -171,11 +171,10 @@ describe('Assignments Api Feature Provider Tests', () => {
             new OneFilterProvider(),
         ]);
 
-        // Must never throw.
-        const result = await provider.fetch();
+        // Rejects so the base service's fault-isolation excludes this provider.
+        await expect(provider.fetch()).rejects.toBeDefined();
 
         telemetry.verifyAll();
-        expect(result).toEqual({ features: [], assignmentContext: '', configs: [] });
     });
 
     it('Should map featureVariables into a vscode config with coerced values and no cf suffix.', async () => {
@@ -284,7 +283,7 @@ describe('Assignments Api Feature Provider Tests', () => {
         expect(result.configs).toEqual([{ Id: 'vscode', Parameters: { foo: 'bar' } }]);
     });
 
-    it('Should return empty data and post error telemetry when fetchFn returns non-2xx.', async () => {
+    it('Should post error telemetry and reject when fetchFn returns non-2xx.', async () => {
         const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();
         const fetchFn = async () => ({ status: 500, json: async () => ({}) });
@@ -305,9 +304,9 @@ describe('Assignments Api Feature Provider Tests', () => {
             'https://example.test',
             fetchFn,
         );
-        const result = await provider.fetch();
+
+        await expect(provider.fetch()).rejects.toBeDefined();
 
         telemetry.verifyAll();
-        expect(result).toEqual({ features: [], assignmentContext: '', configs: [] });
     });
 });
