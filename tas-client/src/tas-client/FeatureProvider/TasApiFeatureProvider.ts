@@ -6,10 +6,12 @@
 import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider.js';
 import { FetchError, FetchResult, HttpClient } from '../Util/HttpClient.js';
 import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry.js';
+import { FetchFn } from '../../contracts/ExperimentationServiceConfig.js';
 import { FilteredFeatureProvider } from './FilteredFeatureProvider.js';
 import { FeatureData, ConfigData } from './IFeatureProvider.js';
 
 export const TASAPI_FETCHERROR_EVENTNAME = 'call-tas-error';
+export const TAS_CALL_EVENTNAME = 'tas-call';
 const ERROR_TYPE = 'ErrorType';
 /**
  * Feature provider implementation that calls the TAS web service to get the most recent active features.
@@ -19,8 +21,21 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         protected httpClient: HttpClient,
         protected telemetry: IExperimentationTelemetry,
         protected filterProviders: IExperimentationFilterProvider[],
+        protected endpoint?: string,
+        protected fetchFn?: FetchFn,
+        protected extensionName?: string,
     ) {
         super(telemetry, filterProviders);
+    }
+
+    /** Emits a uniform per-call event so callers can confirm a legacy TAS call and its outcome. */
+    private postCallTelemetry(outcome: string, assignmentContext: string = ''): void {
+        const properties: Map<string, string> = new Map();
+        properties.set('callType', 'legacy');
+        properties.set('outcome', outcome);
+        properties.set('extensionName', this.extensionName ?? '');
+        properties.set('assignmentContext', assignmentContext);
+        this.telemetry.postEvent(TAS_CALL_EVENTNAME, properties);
     }
 
     /**
@@ -39,10 +54,53 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
         }
 
         //webservice call
-        let response: FetchResult | undefined;
-
         try {
-            response = await this.httpClient.get({ headers: headers });
+            let response: FetchResult | undefined;
+            if (this.fetchFn && this.endpoint) {
+                // Host-provided transport (e.g. VS Code fetcher service) for proxy support.
+                const res = await this.fetchFn(this.endpoint, { method: 'GET', headers });
+                if (res.status < 200 || res.status > 299) {
+                    throw new FetchError('Response not ok', true, false);
+                }
+                response = { data: await res.json() };
+            } else {
+                response = await this.httpClient.get({ headers: headers });
+            }
+
+            if (!response || !response.data) {
+                throw new FetchError('No data received', false);
+            }
+
+            // Convert inside the guarded path so a malformed response (e.g. missing Configs)
+            // is classified as a failure rather than reported as a successful call.
+            const responseData = response.data;
+            const configs = responseData.Configs;
+            const features: string[] = [];
+            for (const c of configs) {
+                if (!c.Parameters) {
+                    continue;
+                }
+                for (const key of Object.keys(c.Parameters)) {
+                    const featureName = key + (c.Parameters[key] ? '' : 'cf');
+                    if (!features.includes(featureName)) {
+                        features.push(featureName);
+                    }
+                }
+            }
+
+            // Report success only after the response has been converted.
+            this.postCallTelemetry('Success', responseData.AssignmentContext ?? '');
+
+            // If we have at least one filter, we post it to telemetry event.
+            if (filters.keys.length > 0) {
+                this.PostEventToTelemetry(headers);
+            }
+
+            return {
+                features,
+                assignmentContext: responseData.AssignmentContext,
+                configs,
+            };
         } catch (error) {
             const fetchError = error as FetchError;
             const properties: Map<string, string> = new Map();
@@ -54,45 +112,13 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
                 // The request was made but no response was received
                 properties.set(ERROR_TYPE, 'NoResponse');
             } else {
-                // Something happened in setting up the request that triggered an Error
+                // Something happened setting up the request or converting the response.
                 properties.set(ERROR_TYPE, 'GenericError');
             }
             this.telemetry.postEvent(TASAPI_FETCHERROR_EVENTNAME, properties);
-        }
-
-        // In case the response fetching failed, throw
-        // exception so that the caller exits.
-        if (!response) {
+            this.postCallTelemetry(properties.get(ERROR_TYPE)!);
             throw Error(TASAPI_FETCHERROR_EVENTNAME);
         }
-
-        // If we have at least one filter, we post it to telemetry event.
-        if (filters.keys.length > 0) {
-            this.PostEventToTelemetry(headers);
-        }
-
-        // Read the response data from the server.
-        const responseData = response.data;
-        let configs = responseData.Configs;
-        let features: string[] = [];
-        for (let c of configs) {
-            if (!c.Parameters) {
-                continue;
-            }
-
-            for (let key of Object.keys(c.Parameters)) {
-                const featureName = key + (c.Parameters[key] ? '' : 'cf');
-                if (!features.includes(featureName)) {
-                    features.push(featureName);
-                }
-            }
-        }
-
-        return {
-            features,
-            assignmentContext: responseData.AssignmentContext,
-            configs,
-        };
     }
 }
 
