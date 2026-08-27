@@ -25,7 +25,13 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         protected storageKey?: string,
         protected storage?: IKeyValueStorage,
     ) {
-        super(telemetry, assignmentContextTelemetryPropertyName, telemetryEventName, storageKey, storage);
+        super(
+            telemetry,
+            assignmentContextTelemetryPropertyName,
+            telemetryEventName,
+            storageKey,
+            storage,
+        );
         // Excluding 0 since it allows to turn off the auto polling.
         if (refreshRateMs < 1000 && refreshRateMs !== 0) {
             throw new Error(

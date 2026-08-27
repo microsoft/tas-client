@@ -26,7 +26,7 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
             options.refetchInterval != null
                 ? options.refetchInterval
                 : // If no fetch interval is provided, refetch functionality is turned off.
-                0,
+                  0,
             options.assignmentContextTelemetryPropertyName,
             options.telemetryEventName,
             options.storageKey,
