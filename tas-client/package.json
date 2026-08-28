@@ -27,7 +27,6 @@
   "scripts": {
     "compile": "tsc -p ./",
     "bundle": "node scripts/bundle.js",
-    "prepublishOnly": "npm run compile && npm run bundle",
     "eslint": "eslint src",
     "watch": "tsc -watch -p ./",
     "test": "vitest run",
