@@ -1,4 +1,3 @@
-import tslintPlugin from '@typescript-eslint/eslint-plugin-tslint';
 import typescriptParser from '@typescript-eslint/parser';
 import prettierRecommended from 'eslint-plugin-prettier/recommended';
 
@@ -15,12 +14,6 @@ export default [
                 project: './tsconfig.json',
                 sourceType: 'module',
             },
-        },
-        plugins: {
-            '@typescript-eslint/tslint': tslintPlugin,
-        },
-        rules: {
-            '@typescript-eslint/tslint/config': ['error', { lintFile: './tslint.json' }],
         },
     },
     {

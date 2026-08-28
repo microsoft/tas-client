@@ -16,7 +16,7 @@ export abstract class BaseFeatureProvider implements IFeatureProvider {
     /**
      * @param telemetry The telemetry implementation.
      */
-    constructor(protected telemetry: IExperimentationTelemetry) { }
+    constructor(protected telemetry: IExperimentationTelemetry) {}
 
     /**
      * Method that wraps the fetch method in order to re-use the fetch promise if needed.

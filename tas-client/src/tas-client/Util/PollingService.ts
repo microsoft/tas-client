@@ -29,7 +29,13 @@ export class PollingService {
         }
 
         if (pollImmediately) {
-            this.onTick!().then(() => { return; }).catch(() => { return; });
+            this.onTick!()
+                .then(() => {
+                    return;
+                })
+                .catch(() => {
+                    return;
+                });
         }
 
         /**
@@ -38,8 +44,9 @@ export class PollingService {
         this.intervalHandle = setInterval(async () => {
             await this.onTick!();
         }, this.fetchInterval);
-        if (this.intervalHandle.unref) { // unref is only available in Node, not the web
+        if (this.intervalHandle.unref) {
+            // unref is only available in Node, not the web
             this.intervalHandle.unref(); // unref is used to avoid keeping node.js alive only because of these timeouts.
-        } 
+        }
     }
 }

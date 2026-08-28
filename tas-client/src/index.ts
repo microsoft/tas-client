@@ -8,4 +8,10 @@ export { IExperimentationService } from './contracts/IExperimentationService.js'
 export { IExperimentationTelemetry } from './contracts/IExperimentationTelemetry.js';
 export { IKeyValueStorage } from './contracts/IKeyValueStorage.js';
 export { ExperimentationService } from './tas-client/ExperimentationService.js';
-export { ExperimentationServiceConfig, FetchFn, AssignmentsFetchFn, IFetchResponse, IAssignmentsFetchResponse } from './contracts/ExperimentationServiceConfig.js';
+export {
+    ExperimentationServiceConfig,
+    FetchFn,
+    AssignmentsFetchFn,
+    IFetchResponse,
+    IAssignmentsFetchResponse,
+} from './contracts/ExperimentationServiceConfig.js';
