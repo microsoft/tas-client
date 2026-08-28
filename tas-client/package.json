@@ -48,6 +48,7 @@
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
+    "minimatch": "^10.2.6",
     "nerdbank-gitversioning": "^3.6.133",
     "prettier": "^3.1.0",
     "ts-node": "^10.9.1",
