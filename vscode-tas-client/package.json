@@ -10,9 +10,7 @@
     "watch": "tsc -watch -p ./",
     "test": "vitest run",
     "clean-build-link": "npm install && npm run compile && npm link",
-    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
-    "test-publish": "node ./publishScript.js --test",
-    "publish": "node ./publishScript.js --publish"
+    "format": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "keywords": [
     "vscode-tas-client"
@@ -31,7 +29,6 @@
     "eslint": "^10.7.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
-    "nerdbank-gitversioning": "^3.6.133",
     "prettier": "^3.2.4",
     "typescript": "^5.3.3",
     "vitest": "^4.1.8"
