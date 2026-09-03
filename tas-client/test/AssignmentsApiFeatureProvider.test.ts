@@ -65,6 +65,50 @@ describe('Assignments Api Feature Provider Tests', () => {
         });
     });
 
+    it('Should strip the /vscode/ scope prefix from returned feature variable keys.', async () => {
+        const httpClient = Mock.ofType<HttpClient>();
+        const telemetry = Mock.ofType<IExperimentationTelemetry>();
+        const fetchResponse = Mock.ofType<FetchResult>();
+        const responseData = {
+            featureVariables: {
+                '/vscode/config.foo': 'true',
+                '/vscode/config.bar': 'baz',
+                'config.unscoped': '1',
+            },
+            assignedVariants: [],
+            dataVersion: 4,
+            assignmentContext: 'ctx',
+        };
+
+        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
+        fetchResponse.setup((a) => a.data).returns(() => responseData);
+        httpClient
+            .setup((a) => a.post(It.isAny()))
+            .returns(() => Promise.resolve(fetchResponse.object));
+
+        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
+            new OneFilterProvider(),
+        ]);
+        const result = await provider.fetch();
+
+        // Scoped keys are stored under their bare name; unscoped keys are left as-is. Coerced
+        // values and the enabled-flights list also use the bare names.
+        expect(result).toEqual({
+            features: ['config.foo', 'config.bar', 'config.unscoped'],
+            assignmentContext: 'ctx',
+            configs: [
+                {
+                    Id: 'vscode',
+                    Parameters: {
+                        'config.foo': true,
+                        'config.bar': 'baz',
+                        'config.unscoped': 1,
+                    },
+                },
+            ],
+        });
+    });
+
     it('Should POST userParams using the filter keys verbatim.', async () => {
         const httpClient = Mock.ofType<HttpClient>();
         const telemetry = Mock.ofType<IExperimentationTelemetry>();

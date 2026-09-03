@@ -32,6 +32,14 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
      * and the Copilot extension query treatment variables under the `vscode` config.
      */
     private static readonly CONFIG_ID = 'vscode';
+
+    /**
+     * Scope prefix that the assignments API prepends to every returned feature variable key
+     * (e.g. `/vscode/config.foo`). It is stripped when mapping the response so treatments are
+     * stored (and queried) under their bare name - matching the legacy provider and keeping the
+     * name out of file-path telemetry redaction heuristics on the consumer side.
+     */
+    private static readonly SCOPE_PREFIX = `/${AssignmentsApiFeatureProvider.CONFIG_ID}/`;
     constructor(
         protected httpClient: HttpClient,
         protected telemetry: IExperimentationTelemetry,
@@ -125,8 +133,10 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
      * Maps an assignments-API response into the `FeatureData` shape consumed by the base
      * service. The flat `featureVariables` map is exposed as the parameters of a single
      * `vscode` config so that `getTreatmentVariable('vscode', name)` resolves against it.
-     * Truthy-valued variables are also listed as enabled flights. The legacy `cf` suffix
-     * convention is intentionally not applied to the new endpoint.
+     * The API scopes every returned key with a `/vscode/` prefix; it is stripped here so
+     * treatments are stored under the bare name (matching the legacy provider). Truthy-valued
+     * variables are also listed as enabled flights. The legacy `cf` suffix convention is
+     * intentionally not applied to the new endpoint.
      */
     private static toFeatureData(response: AssignmentResponse): FeatureData {
         const featureVariables = response.featureVariables || {};
@@ -134,9 +144,10 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
         const features: string[] = [];
         for (const key of Object.keys(featureVariables)) {
             const value = AssignmentsApiFeatureProvider.coerce(featureVariables[key]);
-            parameters[key] = value;
-            if (value && !features.includes(key)) {
-                features.push(key);
+            const name = AssignmentsApiFeatureProvider.stripScopePrefix(key);
+            parameters[name] = value;
+            if (value && !features.includes(name)) {
+                features.push(name);
             }
         }
 
@@ -148,6 +159,16 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
                     ? [{ Id: AssignmentsApiFeatureProvider.CONFIG_ID, Parameters: parameters }]
                     : [],
         };
+    }
+
+    /**
+     * Removes the leading `/vscode/` scope prefix that the assignments API adds to feature
+     * variable keys. Keys without the prefix (e.g. from other sources) are returned unchanged.
+     */
+    private static stripScopePrefix(key: string): string {
+        return key.startsWith(AssignmentsApiFeatureProvider.SCOPE_PREFIX)
+            ? key.substring(AssignmentsApiFeatureProvider.SCOPE_PREFIX.length)
+            : key;
     }
 
     /**
