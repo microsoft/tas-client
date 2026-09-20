@@ -40,6 +40,12 @@ export type AssignmentsFetchFn = (
     init: { method: 'POST'; headers: Record<string, string>; body: string },
 ) => Promise<IFetchResponse>;
 
+/** A feature flag whose `<name>.contextId` companion identifies its deferred assignment. */
+export interface DeferredAssignmentContext {
+    readonly configId: string;
+    readonly name: string;
+}
+
 /**
  * Options that include the implementations of the Experimentation service.
  */
@@ -98,6 +104,8 @@ export interface ExperimentationServiceConfig {
      * This options posts to the implementation the assignment context.
      */
     assignmentContextTelemetryPropertyName: string;
+    /** Withhold these features' assignments until the corresponding treatment result is released. */
+    deferredAssignmentContexts?: readonly DeferredAssignmentContext[];
     /**
      * The name for the telemetry event. This event will be posted every time a flight is queried.
      */

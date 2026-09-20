@@ -9,6 +9,7 @@ import { PollingService } from './Util/PollingService.js';
 import { IExperimentationFilterProvider } from '../contracts/IExperimentationFilterProvider.js';
 import { IKeyValueStorage } from '../contracts/IKeyValueStorage.js';
 import { FeatureData } from './FeatureProvider/IFeatureProvider.js';
+import { DeferredAssignmentContext } from '../contracts/ExperimentationServiceConfig.js';
 
 /**
  * Implementation of Feature provider that provides a polling feature, where the source can be re-fetched every x time given.
@@ -24,6 +25,7 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         protected telemetryEventName: string,
         protected storageKey?: string,
         protected storage?: IKeyValueStorage,
+        deferredAssignmentContexts?: readonly DeferredAssignmentContext[],
     ) {
         super(
             telemetry,
@@ -31,6 +33,7 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
             telemetryEventName,
             storageKey,
             storage,
+            deferredAssignmentContexts,
         );
         // Excluding 0 since it allows to turn off the auto polling.
         if (refreshRateMs < 1000 && refreshRateMs !== 0) {
@@ -56,6 +59,7 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
     }
 
     public dispose(): void {
+        super.dispose();
         if (this.pollingService) {
             this.pollingService.StopPolling();
         }

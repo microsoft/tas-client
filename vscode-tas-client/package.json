@@ -34,6 +34,6 @@
     "vitest": "^4.1.8"
   },
   "dependencies": {
-    "tas-client": "^0.4.6"
+    "tas-client": "file:../tas-client"
   }
 }
