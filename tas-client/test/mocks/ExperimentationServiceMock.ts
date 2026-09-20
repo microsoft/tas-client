@@ -3,52 +3,38 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock.js';
-import { ExperimentationFilterProviderMock } from './ExperimentationFilterProviderMock.js';
-import { KeyValueStorageMock } from './KeyValueStorageMock.js';
-import { FetchResolver } from './FetchResolver.js';
-import { BaseFeatureProviderMock } from './BaseFeatureProviderMock.js';
-import { ExperimentationServiceAutoPolling } from '../../src/tas-client/ExperimentationServiceAutoPolling.js';
-import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry.js';
-import { IKeyValueStorage } from '../../src/contracts/IKeyValueStorage.js';
+import { ExperimentationServiceConfig } from '../../src/contracts/ExperimentationServiceConfig.js';
+import { ExperimentationServiceBase } from '../../src/tas-client/ExperimentationServiceBase.js';
 import { IFeatureProvider } from '../../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { ExperimentationTelemetryMock } from './ExperimentationTelemetryMock.js';
 
-export class ExperimentationServiceMock extends ExperimentationServiceAutoPolling {
-    constructor(
-        protected featureProviders: IFeatureProvider[] = [],
-        private testSpecs: FeatureProviderTestSpec[] = [],
-        private pollingInterval: number = 1000,
-        experimentationTelemetry?: IExperimentationTelemetry,
-        keyValueStorage?: IKeyValueStorage
-    ) {
+type ServiceOptions = Partial<
+    Pick<ExperimentationServiceConfig, 'telemetry' | 'keyValueStorage' | 'storageKey'>
+>;
+
+// Exposes the base service's protected refresh operation without starting background work.
+export class ExperimentationServiceMock extends ExperimentationServiceBase {
+    constructor(providers?: IFeatureProvider[], options: ServiceOptions = {}) {
         super(
-            experimentationTelemetry || new ExperimentationTelemetryMock(),
-            [new ExperimentationFilterProviderMock()],
-            pollingInterval,
-            'AssignmentContextTelemetryEventName',
-            'TelemetryName',
-            'StorageKey',
-            keyValueStorage || new KeyValueStorageMock(),
+            options.telemetry ?? new ExperimentationTelemetryMock(),
+            'assignmentContext',
+            'query-expfeature',
+            options.storageKey,
+            options.keyValueStorage,
         );
-        this.invokeInit();
+        if (providers) {
+            this.featureProviders = [];
+            this.addFeatureProvider(...providers);
+        }
     }
 
-    protected init(): void {
-        for (let spec of this.testSpecs) {
-            this.addFeatureProvider(
-                new BaseFeatureProviderMock(this.telemetry, spec.fetchResolver, spec.fetchDelay),
-            );
-        }
+    protected init(): void {}
 
-        if (this.assignmentContextTelemetryPropertyName == null) {
-            this.assignmentContextTelemetryPropertyName = 'MockAssignmentContextTelemetryProperty';
-        }
-
-        super.init();
+    public refresh(overrideInMemoryFeatures = false) {
+        return this.getFeaturesAsync(overrideInMemoryFeatures);
     }
-}
 
-export interface FeatureProviderTestSpec {
-    fetchDelay: number;
-    fetchResolver: FetchResolver;
+    public get cacheStorage() {
+        return this.storage;
+    }
 }

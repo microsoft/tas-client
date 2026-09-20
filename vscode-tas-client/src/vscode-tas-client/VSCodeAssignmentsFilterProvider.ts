@@ -30,8 +30,7 @@ export class VSCodeAssignmentsFilterProvider implements IExperimentationFilterPr
     ) {}
 
     private static trimVersionSuffix(version: string): string {
-        const result = version.split(/\-[a-zA-Z0-9]+$/);
-        return result[0];
+        return version.split(/[-+]/, 1)[0];
     }
 
     public getFilters(): Map<string, string> {

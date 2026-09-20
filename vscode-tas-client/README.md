@@ -9,9 +9,11 @@ Get an `IExperimentationService` instance by calling `getExperimentationService(
 
 > It's recommended that you get `extensionName` and `extensionVersion` from your extension's `package.json`.
 
+Version traffic filters remove prerelease labels and build metadata (for example, `2.3.4-rc.1+build.123` becomes `2.3.4`). This applies to the VS Code application version on both endpoints and the extension version on the legacy endpoint.
+
 `targetPopulation` is the ring the user belongs to - `Team`, `Internal`, `Insiders`, or `Public`. Most extensions determine what group a user belongs to based on a VS Code setting or a settings file.
 
-`telemetry` is used to send telemetry for [counterfactual logging](https://dev.azure.com/experimentation/Analysis%20and%20Experimentation/_wiki/wikis/AnE.wiki/4228/Demystifying-Counterfactual-Logging) purposes and to attach common properties to all telemetry events, which enables the computation of an experiment scorecard. The extension sends an event `query-expfeature` the first time a given flight or treatment variable is requested and attaches the common properties `vscode.abexp.features` and `abexp.assignmentcontext` to all events.
+`telemetry` is used to send telemetry for [counterfactual logging](https://dev.azure.com/experimentation/Analysis%20and%20Experimentation/_wiki/wikis/AnE.wiki/4228/Demystifying-Counterfactual-Logging) purposes and to attach common properties to all telemetry events, which enables the computation of an experiment scorecard. The extension sends an event `query-expfeature` the first time a given flight or treatment variable is requested and attaches the common property `abexp.assignmentcontext` to all events.
 > note: all the telemetry events sent by the extension and common properties have already been GDPR classified.
 
 `memento` is the VS Code memento storage for your extension, which can be accessed via `context.globalState`, where `context` is the `vscode.ExtensionContext` that VS Code passes your extension on activation. It's used to cache info from the TAS.
@@ -25,7 +27,9 @@ Once you have an instance of `IExperimentationService` you can call `getTreatmen
 
 ## Details
 ### Telemetry
-vscode-tas-client will handle sending all needed telemetry to analyze your experiment. Specifically, it sends an event `query-expfeature` the first time a given flight or treatment variable is requested (for counterfactual logging purposes) and attaches the common properties `vscode.abexp.features` - a list of treatment variables - and `abexp.assignmentcontext` - a list of flight names - to all telemetry events your extension sends.
+vscode-tas-client will handle sending all needed telemetry to analyze your experiment. Specifically, it sends an event `query-expfeature` the first time a given flight or treatment variable is requested (for counterfactual logging purposes) and attaches the common property `abexp.assignmentcontext` - the assignment context - to all telemetry events your extension sends. The deprecated `vscode.abexp.features` property is no longer populated.
+
+When VS Code telemetry is disabled, the factory returns a no-op service: flights are disabled, treatment variables are `undefined`, and no requests, cache reads/writes, telemetry events, or polling are started. The modern `vscode.env.isTelemetryEnabled` setting takes precedence; older hosts fall back to `telemetry.enableTelemetry`, which defaults to enabled.
 
 ### Background refresh of treatment variables
 The vscode-tas-client package makes an HTTP request to the TAS when you first call `getExperimentationService`, and then every 30 minutes after that. The new information from the `TAS` is cached in VS Code memento storage.
@@ -38,6 +42,30 @@ A few examples to clarify:
 - *Your extension calls `getExperimentationServiceAsync` and then immediately after calls `getTreatmentVariable`. Later in the session, you call `getTreatmentVariableAsync`*. vscode-tas-client will make a request to the TAS as soon as you call `getExperimentationServiceAsync`. However, this request usually takes 1-5s to complete, so the call to `getTreatmentVariable` is made before it does. This means that the `getTreatmentVariable` request will be serviced using cached data from the last request to the TAS. The second request, `getTreatmentVariableAsync` will result in waiting on an HTTP request to the TAS. The updated data will be used to service the request and the cache will be updated. Note this means the user could change flights, or become part of a new flight, mid-session.
 - *Your extension calls `getExperimentationServiceAsync` and then ~1 minute later calls `getTreatmentVariable`*. vscode-tas-client will make a request to the TAS as soon as you call `getExperimentationServiceAsync`. Because this request completes before the call to `getExperimentationService`, the freshly fetched data is used.
 
+
+## Development and testing
+
+Run these commands from the `vscode-tas-client` directory:
+
+```sh
+npm ci
+npm test
+npm run test:typecheck
+npm run compile
+npm run eslint
+```
+
+Tests use reusable, strongly typed fakes in `test/mocks` for VS Code metadata/settings, memento storage, telemetry, filter providers, and transport responses. Factory tests check the adapter's configuration contract; integration tests use the working-tree `tas-client` implementation with injected transports to exercise startup caching, dual endpoints, refreshes, and disposal. Requests complete through explicit deferred promises, and polling uses fake timers. No VS Code instance, real network, or wall-clock sleeps are required; unexpected HTTP or `fetch` calls fail the suite.
+
+The Vitest configuration resolves only the exact `tas-client` import to the sibling `tas-client/src/index.ts`, and `tsconfig.test.json` uses the same test-only mapping. This validates the adapter against current core changes without requiring a core build or changing the production npm dependency. Factory mocks remain isolated to their test file; integration tests assert that the service is an instance of the working-tree implementation. Run these tests from a full repository checkout containing both packages.
+
+To check order independence and repeatability, run the suite with several fixed shuffle seeds:
+
+```sh
+npm test -- --sequence.shuffle --sequence.seed=17
+npm test -- --sequence.shuffle --sequence.seed=101
+npm test -- --sequence.shuffle --sequence.seed=2026
+```
 
 # 0.3.1
 

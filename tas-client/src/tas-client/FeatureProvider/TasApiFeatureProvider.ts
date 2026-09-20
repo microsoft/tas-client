@@ -92,7 +92,7 @@ export class TasApiFeatureProvider extends FilteredFeatureProvider {
             this.postCallTelemetry('Success', responseData.AssignmentContext ?? '');
 
             // If we have at least one filter, we post it to telemetry event.
-            if (filters.keys.length > 0) {
+            if (filters.size > 0) {
                 this.PostEventToTelemetry(headers);
             }
 

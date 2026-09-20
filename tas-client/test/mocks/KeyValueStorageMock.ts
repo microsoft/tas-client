@@ -4,18 +4,24 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IKeyValueStorage } from '../../src/contracts/IKeyValueStorage.js';
+
 export class KeyValueStorageMock implements IKeyValueStorage {
-    private storage: Map<string, any> = new Map<string, any>();
+    private readonly values = new Map<string, unknown>();
+    public readonly reads: string[] = [];
+    public readonly writes: { key: string; value: unknown }[] = [];
+    public readBarrier?: Promise<void>;
 
     public async getValue<T>(key: string, defaultValue?: T): Promise<T | undefined> {
-        if (this.storage.has(key)) {
-            return await Promise.resolve(this.storage.get(key));
+        this.reads.push(key);
+        const value = this.values.has(key) ? this.values.get(key) : defaultValue;
+        if (this.readBarrier) {
+            await this.readBarrier;
         }
-
-        return await Promise.resolve(defaultValue || undefined);
+        return value as T | undefined;
     }
 
     public setValue<T>(key: string, value: T): void {
-        this.storage.set(key, value);
+        this.values.set(key, value);
+        this.writes.push({ key, value });
     }
 }

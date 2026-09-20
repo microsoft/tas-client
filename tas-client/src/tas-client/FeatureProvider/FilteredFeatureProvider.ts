@@ -18,7 +18,7 @@ export abstract class FilteredFeatureProvider extends BaseFeatureProvider {
         super(telemetry);
     }
 
-    private cachedTelemetryEvents: any[] = [];
+    private cachedTelemetryEvents: string[] = [];
 
     protected getFilters(): Map<string, any> {
         // We get the filters that will be sent as headers.
@@ -36,14 +36,13 @@ export abstract class FilteredFeatureProvider extends BaseFeatureProvider {
     }
 
     protected PostEventToTelemetry(headers: any) {
+        const jsonHeaders = JSON.stringify(headers);
         /**
          * If these headers have already been posted, we skip from posting them again..
          */
-        if (this.cachedTelemetryEvents.includes(headers)) {
+        if (this.cachedTelemetryEvents.includes(jsonHeaders)) {
             return;
         }
-
-        const jsonHeaders = JSON.stringify(headers);
 
         this.telemetry.postEvent(
             'report-headers',
@@ -53,6 +52,6 @@ export abstract class FilteredFeatureProvider extends BaseFeatureProvider {
         /**
          * We cache the flight so we don't post it again.
          */
-        this.cachedTelemetryEvents.push(headers);
+        this.cachedTelemetryEvents.push(jsonHeaders);
     }
 }

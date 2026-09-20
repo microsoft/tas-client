@@ -3,354 +3,321 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationTelemetry } from '../src/contracts/IExperimentationTelemetry.js';
-import { IExperimentationFilterProvider } from '../src/contracts/IExperimentationFilterProvider.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     AssignmentsApiFeatureProvider,
-    AssignmentRequest,
     ASSIGNMENTS_FETCHERROR_EVENTNAME,
     ASSIGNMENTS_VALIDATION_EVENTNAME,
+    TAS_CALL_EVENTNAME,
 } from '../src/tas-client/FeatureProvider/AssignmentsApiFeatureProvider.js';
-import { FetchError, FetchResult, HttpClient } from '../src/tas-client/Util/HttpClient.js';
-import { It, Mock, Times } from 'typemoq';
-import { expect, describe, it } from 'vitest';
+import { FetchError } from '../src/tas-client/Util/HttpClient.js';
+import { ExperimentationFilterProviderMock } from './mocks/ExperimentationFilterProviderMock.js';
+import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
+import { FetchMock } from './mocks/FetchMock.js';
+import { HttpClientMock } from './mocks/HttpClientMock.js';
 
-class OneFilterProvider implements IExperimentationFilterProvider {
-    public getFilters(): Map<string, any> {
-        const filters = new Map<string, any>();
-        filters.set('X-VSCode-Build', 'insider');
-        filters.set('X-Empty', '');
-        filters.set('X-Null', null);
-        return filters;
-    }
-}
+describe('AssignmentsApiFeatureProvider', () => {
+    const endpoint = 'https://example.test/assignments';
+    let http: HttpClientMock;
+    let telemetry: ExperimentationTelemetryMock;
+    let filters: ExperimentationFilterProviderMock;
 
-describe('Assignments Api Feature Provider Tests', () => {
-    it('Should POST userParams built from non-empty filters.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: { foo: 'bar' },
-            assignedVariants: [],
-            dataVersion: 3,
-            assignmentContext: 'ctx',
-        };
-
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-
-        let capturedBody: AssignmentRequest | undefined;
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .callback((cfg: any) => {
-                capturedBody = cfg?.body as AssignmentRequest;
-            })
-            .returns(() => Promise.resolve(fetchResponse.object))
-            .verifiable(Times.once());
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
-        ]);
-        const result = await provider.fetch();
-
-        httpClient.verifyAll();
-        // Only the non-empty, non-null filter should be present.
-        expect(capturedBody).toEqual({ userParams: { 'X-VSCode-Build': 'insider' } });
-        // Response is mapped and merged into the active feature set.
-        expect(result).toEqual({
-            features: ['foo'],
-            assignmentContext: 'ctx',
-            configs: [{ Id: 'vscode', Parameters: { foo: 'bar' } }],
+    beforeEach(() => {
+        http = new HttpClientMock();
+        telemetry = new ExperimentationTelemetryMock();
+        filters = new ExperimentationFilterProviderMock([['X-VSCode-Build', 'insider']]);
+        http.post.mockResolvedValue({
+            data: {
+                featureVariables: {},
+                assignedVariants: [],
+                dataVersion: 7,
+                assignmentContext: 'new;',
+            },
         });
     });
 
-    it('Should strip the /vscode/ scope prefix from returned feature variable keys.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: {
-                '/vscode/config.foo': 'true',
-                '/vscode/config.bar': 'baz',
-                'config.unscoped': '1',
-            },
-            assignedVariants: [],
-            dataVersion: 4,
-            assignmentContext: 'ctx',
-        };
+    function createProvider(transport?: FetchMock) {
+        return new AssignmentsApiFeatureProvider(
+            http,
+            telemetry,
+            [filters],
+            endpoint,
+            transport?.fetch,
+        );
+    }
 
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .returns(() => Promise.resolve(fetchResponse.object));
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
+    function expectFailure(outcome: string) {
+        expect(
+            telemetry.eventsNamed(ASSIGNMENTS_FETCHERROR_EVENTNAME).map((event) => event.args),
+        ).toEqual([new Map([['ErrorType', outcome]])]);
+        expect(telemetry.eventsNamed(ASSIGNMENTS_VALIDATION_EVENTNAME)).toHaveLength(0);
+        expect(telemetry.eventsNamed(TAS_CALL_EVENTNAME).map((event) => event.args)).toEqual([
+            new Map([
+                ['callType', 'assignments'],
+                ['outcome', outcome],
+                ['extensionName', ''],
+                ['assignmentContext', ''],
+            ]),
         ]);
-        const result = await provider.fetch();
+    }
 
-        // Scoped keys are stored under their bare name; unscoped keys are left as-is. Coerced
-        // values and the enabled-flights list also use the bare names.
-        expect(result).toEqual({
-            features: ['config.foo', 'config.bar', 'config.unscoped'],
-            assignmentContext: 'ctx',
+    it('posts user params, dropping only null, undefined and empty string values', async () => {
+        filters.filters.set('X-Empty', '');
+        filters.filters.set('X-Null', null);
+        filters.filters.set('X-Undefined', undefined);
+        filters.filters.set('IsInternal', false);
+        filters.filters.set('Version', 0);
+
+        await createProvider().getFeatures();
+
+        expect(http.post).toHaveBeenCalledExactlyOnceWith({
+            body: {
+                userParams: { 'X-VSCode-Build': 'insider', IsInternal: 'false', Version: '0' },
+            },
+        });
+        expect(http.get).not.toHaveBeenCalled();
+    });
+
+    it('caps merged non-empty user params at 50 while honoring later provider overrides', async () => {
+        const entries = Array.from({ length: 55 }, (_, index): [string, string] => [
+            `attribute${index}`,
+            `value${index}`,
+        ]);
+        const first = new ExperimentationFilterProviderMock([['empty', ''], ...entries]);
+        const second = new ExperimentationFilterProviderMock([['attribute0', 'overridden']]);
+        const provider = new AssignmentsApiFeatureProvider(http, telemetry, [first, second]);
+        const expected = Object.fromEntries(entries.slice(0, 50));
+        expected.attribute0 = 'overridden';
+
+        await provider.getFeatures();
+
+        expect(http.post).toHaveBeenCalledExactlyOnceWith({ body: { userParams: expected } });
+        expect(Object.keys(expected)).toHaveLength(50);
+    });
+
+    it.each([false, true])(
+        'skips requests when no valid params remain (filters supplied: %s)',
+        async (supplied) => {
+            const transport = new FetchMock();
+            const provider = new AssignmentsApiFeatureProvider(
+                http,
+                telemetry,
+                supplied
+                    ? [
+                          new ExperimentationFilterProviderMock([
+                              ['empty', ''],
+                              ['null', null],
+                              ['missing', undefined],
+                          ]),
+                      ]
+                    : [],
+                endpoint,
+                transport.fetch,
+            );
+
+            expect(await provider.getFeatures()).toEqual({
+                features: [],
+                assignmentContext: '',
+                configs: [],
+            });
+            expect(http.post).not.toHaveBeenCalled();
+            expect(transport.fetch).not.toHaveBeenCalled();
+            expect(telemetry.postedEvents).toHaveLength(0);
+        },
+    );
+
+    it('strips only the vscode scope, coerces typed values, and deduplicates enabled flights', async () => {
+        http.post.mockResolvedValueOnce({
+            data: {
+                featureVariables: {
+                    '/vscode/enabled': 'true',
+                    enabled: 'true',
+                    '/vscode/disabled': 'false',
+                    '/vscode/rollout': '0',
+                    '/vscode/negative': '-3',
+                    '/vscode/ratio': '1.25',
+                    '/vscode/limit': '1e3',
+                    '/vscode/variant': 'treatment',
+                    '/vscode/empty': '',
+                    '/other/flag': 'true',
+                },
+                assignedVariants: [],
+                dataVersion: 7,
+                assignmentContext: 'new;',
+            },
+        });
+
+        expect(await createProvider().getFeatures()).toEqual({
+            features: ['enabled', 'negative', 'ratio', 'limit', 'variant', '/other/flag'],
+            assignmentContext: 'new;',
             configs: [
                 {
                     Id: 'vscode',
                     Parameters: {
-                        'config.foo': true,
-                        'config.bar': 'baz',
-                        'config.unscoped': 1,
+                        enabled: true,
+                        disabled: false,
+                        rollout: 0,
+                        negative: -3,
+                        ratio: 1.25,
+                        limit: 1000,
+                        variant: 'treatment',
+                        empty: '',
+                        '/other/flag': true,
                     },
                 },
             ],
         });
     });
 
-    it('Should POST userParams using the filter keys verbatim.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: {},
-            assignedVariants: [],
-            dataVersion: 1,
-            assignmentContext: '',
-        };
-
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-
-        let capturedBody: AssignmentRequest | undefined;
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .callback((cfg: any) => {
-                capturedBody = cfg?.body as AssignmentRequest;
-            })
-            .returns(() => Promise.resolve(fetchResponse.object));
-
-        const provider = new AssignmentsApiFeatureProvider(
-            httpClient.object,
-            telemetry.object,
-            [new OneFilterProvider()],
-        );
-        await provider.fetch();
-
-        // Assignments providers emit the final key names; empty/null values are dropped.
-        expect(capturedBody).toEqual({ userParams: { 'X-VSCode-Build': 'insider' } });
-    });
-
-    it('Should post validation telemetry on success.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: { foo: 'bar', baz: 'qux' },
-            assignedVariants: [{ name: 'v1' }],
-            dataVersion: 7,
-            assignmentContext: 'ctx',
-        };
-
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .returns(() => Promise.resolve(fetchResponse.object));
-
-        telemetry
-            .setup((t) =>
-                t.postEvent(
-                    It.isValue(ASSIGNMENTS_VALIDATION_EVENTNAME),
-                    It.is(
-                        (map) =>
-                            map.get('FeatureVariableCount') === '2' &&
-                            map.get('AssignedVariantCount') === '1' &&
-                            map.get('DataVersion') === '7' &&
-                            map.get('AssignmentContext') === 'ctx',
-                    ),
-                ),
-            )
-            .verifiable(Times.once());
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
-        ]);
-        await provider.fetch();
-
-        telemetry.verifyAll();
-    });
-
-    it('Should NOT call the endpoint when there are no userParams.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-
-        httpClient.setup((a) => a.post(It.isAny())).verifiable(Times.never());
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, []);
-        const result = await provider.fetch();
-
-        httpClient.verifyAll();
-        expect(result).toEqual({ features: [], assignmentContext: '', configs: [] });
-    });
-
-    it('Should emit error telemetry and reject when the request fails.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchError = new FetchError('ServerError', true, false);
-
-        httpClient.setup((a) => a.post(It.isAny())).returns(() => Promise.reject(fetchError));
-
-        telemetry
-            .setup((t) =>
-                t.postEvent(
-                    It.isValue(ASSIGNMENTS_FETCHERROR_EVENTNAME),
-                    It.is((map) => map.get('ErrorType') === 'ServerError'),
-                ),
-            )
-            .verifiable(Times.once());
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
-        ]);
-
-        // Rejects so the base service's fault-isolation excludes this provider.
-        await expect(provider.fetch()).rejects.toBeDefined();
-
-        telemetry.verifyAll();
-    });
-
-    it('Should map featureVariables into a vscode config with coerced values and no cf suffix.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: {
-                boolTrue: 'true',
-                boolFalse: 'false',
-                num: '42',
-                str: 'treatment',
+    it('retains configurations when every treatment is falsy without inventing cf flights', async () => {
+        http.post.mockResolvedValueOnce({
+            data: {
+                featureVariables: { enabled: 'false', rollout: '0', label: '' },
+                assignmentContext: 'control;',
             },
-            assignedVariants: [],
-            dataVersion: 5,
-            assignmentContext: 'ctx',
-        };
-
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .returns(() => Promise.resolve(fetchResponse.object));
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
-        ]);
-        const result = await provider.fetch();
-
-        expect(result.assignmentContext).toBe('ctx');
-        // Strings are coerced to booleans/numbers so lookups match the legacy provider's types.
-        expect(result.configs).toEqual([
-            {
-                Id: 'vscode',
-                Parameters: { boolTrue: true, boolFalse: false, num: 42, str: 'treatment' },
-            },
-        ]);
-        // No 'cf' suffix; only truthy-valued variables are listed as enabled flights.
-        expect(result.features).toEqual(['boolTrue', 'num', 'str']);
-    });
-
-    it('Should keep configs even when every variable is falsy.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchResponse = Mock.ofType<FetchResult>();
-        const responseData = {
-            featureVariables: { flag: 'false' },
-            assignedVariants: [],
-            dataVersion: 1,
-            assignmentContext: '',
-        };
-
-        fetchResponse.setup((a: any) => a.then).returns(() => undefined);
-        fetchResponse.setup((a) => a.data).returns(() => responseData);
-        httpClient
-            .setup((a) => a.post(It.isAny()))
-            .returns(() => Promise.resolve(fetchResponse.object));
-
-        const provider = new AssignmentsApiFeatureProvider(httpClient.object, telemetry.object, [
-            new OneFilterProvider(),
-        ]);
-        const result = await provider.fetch();
-
-        expect(result.features).toEqual([]);
-        expect(result.configs).toEqual([{ Id: 'vscode', Parameters: { flag: false } }]);
-    });
-
-    it('Should use the provided fetchFn transport instead of the HTTP client.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const responseData = {
-            featureVariables: { foo: 'bar' },
-            assignedVariants: [],
-            dataVersion: 1,
-            assignmentContext: 'ctx',
-        };
-
-        let calledUrl: string | undefined;
-        let calledInit: { method: string; headers: Record<string, string>; body: string } | undefined;
-        const fetchFn = async (
-            url: string,
-            init: { method: 'GET' | 'POST'; headers: Record<string, string>; body?: string },
-        ) => {
-            calledUrl = url;
-            calledInit = init as typeof calledInit;
-            return { status: 200, json: async () => responseData };
-        };
-
-        httpClient.setup((a) => a.post(It.isAny())).verifiable(Times.never());
-
-        const provider = new AssignmentsApiFeatureProvider(
-            httpClient.object,
-            telemetry.object,
-            [new OneFilterProvider()],
-            'https://example.test/api/v1/assignments',
-            fetchFn,
-        );
-        const result = await provider.fetch();
-
-        httpClient.verifyAll(); // built-in POST must not be used
-        expect(calledUrl).toBe('https://example.test/api/v1/assignments');
-        expect(calledInit?.method).toBe('POST');
-        expect(JSON.parse(calledInit!.body)).toEqual({
-            userParams: { 'X-VSCode-Build': 'insider' },
         });
-        expect(result.configs).toEqual([{ Id: 'vscode', Parameters: { foo: 'bar' } }]);
+
+        expect(await createProvider().getFeatures()).toEqual({
+            features: [],
+            assignmentContext: 'control;',
+            configs: [{ Id: 'vscode', Parameters: { enabled: false, rollout: 0, label: '' } }],
+        });
     });
 
-    it('Should post error telemetry and reject when fetchFn returns non-2xx.', async () => {
-        const httpClient = Mock.ofType<HttpClient>();
-        const telemetry = Mock.ofType<IExperimentationTelemetry>();
-        const fetchFn = async () => ({ status: 500, json: async () => ({}) });
+    it('handles an empty assignment envelope and missing optional telemetry metadata', async () => {
+        http.post.mockResolvedValueOnce({ data: { dataVersion: 0 } });
 
-        telemetry
-            .setup((t) =>
-                t.postEvent(
-                    It.isValue(ASSIGNMENTS_FETCHERROR_EVENTNAME),
-                    It.is((map) => map.get('ErrorType') === 'ServerError'),
-                ),
-            )
-            .verifiable(Times.once());
+        expect(await createProvider().getFeatures()).toEqual({
+            features: [],
+            assignmentContext: '',
+            configs: [],
+        });
+        expect(telemetry.eventsNamed(ASSIGNMENTS_VALIDATION_EVENTNAME)[0].args).toEqual(
+            new Map([
+                ['FeatureVariableCount', '0'],
+                ['AssignedVariantCount', '0'],
+                ['DataVersion', '0'],
+                ['AssignmentContext', ''],
+            ]),
+        );
+    });
 
+    it('uses custom POST transport and reports the caller, assignment context, and validation counts', async () => {
+        const transport = new FetchMock();
+        const response = transport.respondWith({
+            featureVariables: { '/vscode/enabled': 'true', '/vscode/disabled': 'false' },
+            assignedVariants: [
+                { name: 'enabled', numberline: 'line1', isForced: false, variantAllocationId: 1 },
+                { name: 'disabled', numberline: 'line2', isForced: true, variantAllocationId: 2 },
+            ],
+            dataVersion: 7,
+            assignmentContext: 'custom;',
+        });
         const provider = new AssignmentsApiFeatureProvider(
-            httpClient.object,
-            telemetry.object,
-            [new OneFilterProvider()],
-            'https://example.test',
-            fetchFn,
+            http,
+            telemetry,
+            [filters],
+            endpoint,
+            transport.fetch,
+            'example.extension',
         );
 
-        await expect(provider.fetch()).rejects.toBeDefined();
+        await provider.getFeatures();
 
-        telemetry.verifyAll();
+        expect(transport.fetch).toHaveBeenCalledExactlyOnceWith(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userParams: { 'X-VSCode-Build': 'insider' } }),
+        });
+        expect(response.json).toHaveBeenCalledTimes(1);
+        expect(http.post).not.toHaveBeenCalled();
+        expect(telemetry.eventsNamed(ASSIGNMENTS_VALIDATION_EVENTNAME)[0].args).toEqual(
+            new Map([
+                ['FeatureVariableCount', '2'],
+                ['AssignedVariantCount', '2'],
+                ['DataVersion', '7'],
+                ['AssignmentContext', 'custom;'],
+            ]),
+        );
+        expect(telemetry.eventsNamed(TAS_CALL_EVENTNAME)[0].args).toEqual(
+            new Map([
+                ['callType', 'assignments'],
+                ['outcome', 'Success'],
+                ['extensionName', 'example.extension'],
+                ['assignmentContext', 'custom;'],
+            ]),
+        );
+    });
+
+    it('does not discard assignments when validation telemetry throws', async () => {
+        const recordEvent = telemetry.postEvent.bind(telemetry);
+        vi.spyOn(telemetry, 'postEvent').mockImplementation((eventName, args) => {
+            if (eventName === ASSIGNMENTS_VALIDATION_EVENTNAME) {
+                throw new Error('Telemetry unavailable');
+            }
+            recordEvent(eventName, args);
+        });
+
+        expect((await createProvider().getFeatures()).assignmentContext).toBe('new;');
+        expect(telemetry.eventsNamed(ASSIGNMENTS_FETCHERROR_EVENTNAME)).toHaveLength(0);
+        expect(telemetry.eventsNamed(TAS_CALL_EVENTNAME)[0].args.get('outcome')).toBe('Success');
+    });
+
+    it.each([200, 299])('accepts custom-transport success status %i', async (status) => {
+        const transport = new FetchMock();
+        transport.respondWith({ featureVariables: { enabled: 'true' } }, status);
+
+        expect((await createProvider(transport).getFeatures()).features).toEqual(['enabled']);
+    });
+
+    it.each([199, 300, 404, 503])('rejects status %i before parsing its body', async (status) => {
+        const transport = new FetchMock();
+        const response = transport.respondWith({}, status);
+
+        await expect(createProvider(transport).getFeatures()).rejects.toMatchObject({
+            responseReceived: true,
+            responseOk: false,
+        });
+        expect(response.json).not.toHaveBeenCalled();
+        expectFailure('ServerError');
+    });
+
+    it.each<[Error, string]>([
+        [new FetchError('HTTP error', true, false), 'ServerError'],
+        [new FetchError('No connection', false), 'NoResponse'],
+        [new FetchError('Unreadable response', true, true), 'GenericError'],
+        [new Error('Transport setup failed'), 'GenericError'],
+    ])('classifies built-in transport error %j as %s', async (error, outcome) => {
+        http.post.mockRejectedValueOnce(error);
+
+        await expect(createProvider().getFeatures()).rejects.toBe(error);
+        expectFailure(outcome);
+    });
+
+    it.each([undefined, null])('rejects a missing response payload (%j)', async (data) => {
+        http.post.mockResolvedValueOnce({ data });
+
+        await expect(createProvider().getFeatures()).rejects.toMatchObject({
+            responseReceived: false,
+        });
+        expectFailure('NoResponse');
+    });
+
+    it('classifies custom transport and JSON failures, then recovers on a later request', async () => {
+        const transport = new FetchMock();
+        const networkError = new Error('Proxy unavailable');
+        const parseError = new SyntaxError('Invalid JSON');
+        transport.fetch.mockRejectedValueOnce(networkError);
+        transport.respondWith(undefined).json.mockRejectedValueOnce(parseError);
+        transport.respondWith({ featureVariables: { enabled: 'true' } });
+        const provider = createProvider(transport);
+
+        await expect(provider.getFeatures()).rejects.toBe(networkError);
+        await expect(provider.getFeatures()).rejects.toBe(parseError);
+        expect((await provider.getFeatures()).features).toEqual(['enabled']);
+        expect(
+            telemetry.eventsNamed(TAS_CALL_EVENTNAME).map((event) => event.args.get('outcome')),
+        ).toEqual(['GenericError', 'GenericError', 'Success']);
+        expect(http.post).not.toHaveBeenCalled();
     });
 });
