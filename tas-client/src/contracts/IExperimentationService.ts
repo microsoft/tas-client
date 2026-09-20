@@ -64,8 +64,9 @@ export interface IExperimentationService {
 
     /**
      * Returns the value of the treatment variable, or undefined if not found.
-     * It re-fetches values from the server. If checkCache is true and the value exists
-     * in the cache, the Treatment Assignment Service is not called.
+     * It waits for cache initialization and re-fetches values from the server.
+     * If checkCache is true and the value exists in the cache (including false, 0, or ""),
+     * the Treatment Assignment Service is not called.
      * @param config name of the config to check.
      * @param name name of the treatment variable.
      * @param checkCache check the cache for the variable before calling the TAS.
@@ -78,6 +79,7 @@ export interface IExperimentationService {
 
     /**
      * Disposes the experimentation service and stops any ongoing polling.
+     * In-flight requests may complete, but do not restart polling.
      */
     dispose(): void;
 }

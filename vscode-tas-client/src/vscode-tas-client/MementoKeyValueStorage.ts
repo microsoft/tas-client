@@ -11,7 +11,7 @@ export class MementoKeyValueStorage implements IKeyValueStorage {
 
     public async getValue<T>(key: string, defaultValue?: T | undefined): Promise<T | undefined> {
         const value = await this.mementoGlobalStorage.get<T>(key);
-        return value || defaultValue;
+        return value === undefined ? defaultValue : value;
     }
 
     public setValue<T>(key: string, value: T): void {

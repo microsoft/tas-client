@@ -3,16 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { vi, describe, it, expect } from 'vitest';
-
-vi.mock('vscode', () => ({
-    version: '1.85.0',
-    env: {
-        appName: 'Visual Studio Code',
-        machineId: 'test-machine-id',
-        language: 'en',
-    },
-}));
+import { describe, it, expect } from 'vitest';
 
 import {
     VSCodeFilterProvider,

@@ -6,24 +6,13 @@
 import { IExperimentationFilterProvider } from '../../src/contracts/IExperimentationFilterProvider.js';
 
 export class ExperimentationFilterProviderMock implements IExperimentationFilterProvider {
-    public getFilters() {
-        return new Map<string, any>();
-    }
-}
+    public readonly filters: Map<string, unknown>;
 
-export class ExperimentationFilterProviderOneFilterMock implements IExperimentationFilterProvider {
-    public getFilters(): Map<string, any> {
-        const filters = new Map<string, any>();
-        filters.set('joker', true);
-        return filters;
+    constructor(entries: Iterable<readonly [string, unknown]> = []) {
+        this.filters = new Map(entries);
     }
-}
 
-export class ExperimentationFilterProviderTwoFilterMock implements IExperimentationFilterProvider {
-    public getFilters(): Map<string, any> {
-        const filters = new Map<string, any>();
-        filters.set('lucario', true);
-        filters.set('wario', false);
-        return filters;
+    public getFilters(): Map<string, unknown> {
+        return new Map(this.filters);
     }
 }

@@ -6,14 +6,24 @@
 import { IExperimentationTelemetry } from '../../src/contracts/IExperimentationTelemetry.js';
 
 export class ExperimentationTelemetryMock implements IExperimentationTelemetry {
-    public postedEvents: { eventName: string, args: any, sharedProperties: Map<string, string> }[] = [];
-    public postEvent(eventName: string, args: any): void {
-        console.log(`Post Event: ${eventName}`);
-        console.log(args);
-        this.postedEvents.push({ eventName, args, sharedProperties: new Map(this.sharedProperties) });
+    public readonly postedEvents: {
+        eventName: string;
+        args: Map<string, string>;
+        sharedProperties: Map<string, string>;
+    }[] = [];
+    public readonly sharedProperties = new Map<string, string>();
+
+    public postEvent(eventName: string, args: Map<string, string>): void {
+        this.postedEvents.push({
+            eventName,
+            args: new Map(args),
+            sharedProperties: new Map(this.sharedProperties),
+        });
     }
 
-    public sharedProperties: Map<string, string> = new Map<string, string>();
+    public eventsNamed(eventName: string) {
+        return this.postedEvents.filter((event) => event.eventName === eventName);
+    }
 
     public setSharedProperty(name: string, value: string): void {
         this.sharedProperties.set(name, value);

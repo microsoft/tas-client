@@ -1,19 +1,13 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  test: {
-    globals: true,
-    environment: 'node',
-    include: ['test/**/*.test.ts'],
-    exclude: ['node_modules', 'out'],
-    coverage: {
-      reporter: ['text', 'json', 'html'],
-      exclude: [
-        'node_modules/',
-        'out/',
-        'test/',
-        '**/*.d.ts',
-      ],
+    test: {
+        globals: true,
+        environment: 'node',
+        include: ['test/**/*.test.ts'],
+        exclude: ['node_modules', 'out'],
+        setupFiles: ['test/setup.ts'],
+        restoreMocks: true,
+        unstubGlobals: true,
     },
-  },
-})
+});

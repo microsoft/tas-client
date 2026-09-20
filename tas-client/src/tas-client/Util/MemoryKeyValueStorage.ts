@@ -12,7 +12,7 @@ export class MemoryKeyValueStorage implements IKeyValueStorage {
             return await Promise.resolve(this.storage.get(key));
         }
 
-        return await Promise.resolve(defaultValue || undefined);
+        return defaultValue;
     }
 
     public setValue<T>(key: string, value: T): void {

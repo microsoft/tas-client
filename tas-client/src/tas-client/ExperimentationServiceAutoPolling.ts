@@ -15,6 +15,7 @@ import { FeatureData } from './FeatureProvider/IFeatureProvider.js';
  */
 export abstract class ExperimentationServiceAutoPolling extends ExperimentationServiceBase {
     private pollingService?: PollingService;
+    private isDisposed = false;
 
     constructor(
         protected telemetry: IExperimentationTelemetry,
@@ -22,8 +23,8 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         protected refreshRateMs: number,
         protected assignmentContextTelemetryPropertyName: string,
         protected telemetryEventName: string,
-        protected storageKey?: string,
-        protected storage?: IKeyValueStorage,
+        storageKey?: string,
+        storage?: IKeyValueStorage,
     ) {
         super(
             telemetry,
@@ -56,6 +57,7 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
     }
 
     public dispose(): void {
+        this.isDisposed = true;
         if (this.pollingService) {
             this.pollingService.StopPolling();
         }
@@ -70,7 +72,9 @@ export abstract class ExperimentationServiceAutoPolling extends ExperimentationS
         } else {
             this.pollingService.StopPolling();
             let result = await super.getFeaturesAsync(overrideInMemoryFeatures);
-            this.pollingService.StartPolling();
+            if (!this.isDisposed) {
+                this.pollingService.StartPolling();
+            }
             return result;
         }
     }

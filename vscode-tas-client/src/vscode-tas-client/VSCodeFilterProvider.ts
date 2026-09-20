@@ -18,15 +18,12 @@ export class VSCodeFilterProvider implements IExperimentationFilterProvider {
 
     /**
      * Returns a version string that can be parsed into a .NET Build object
-     * by removing the tag suffix (for example -dev).
+     * by removing prerelease and build metadata suffixes (for example -dev or +build.1).
      *
      * @param version Version string to be trimmed.
      */
     private static trimVersionSuffix(version: string): string {
-        const regex = /\-[a-zA-Z0-9]+$/;
-        const result = version.split(regex);
-
-        return result[0];
+        return version.split(/[-+]/, 1)[0];
     }
 
     public getFilterValue(filter: string): string | null {

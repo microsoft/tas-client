@@ -3,581 +3,535 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { expect, describe, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-    ExperimentationServiceMock,
-    FeatureProviderTestSpec,
-} from './mocks/ExperimentationServiceMock.js';
-import { FetchResolver } from './mocks/FetchResolver.js';
-import { FilteredExperimentationServiceMock } from './mocks/FilteredExperimentationServiceMock.js';
-import {
-    ExperimentationFilterProviderOneFilterMock,
-    ExperimentationFilterProviderTwoFilterMock,
-} from './mocks/ExperimentationFilterProviderMock.js';
+    ConfigData,
+    FeatureData,
+    IFeatureProvider,
+} from '../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { MemoryKeyValueStorage } from '../src/tas-client/Util/MemoryKeyValueStorage.js';
+import { BaseFeatureProviderMock, createFeatureData } from './mocks/BaseFeatureProviderMock.js';
+import { Deferred } from './mocks/Deferred.js';
+import { ExperimentationServiceMock } from './mocks/ExperimentationServiceMock.js';
 import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
 import { KeyValueStorageMock } from './mocks/KeyValueStorageMock.js';
-import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider.js';
-import { ThrowFeatureProvider } from './mocks/BaseFeatureProviderMock.js';
 
-/**
- * Multiple feature providers.
- * Scenarios covered:
- * 1) An Experimentation Service Provider that has more than 1 Feature Provider.
- * 2) These feature providers have different fetch durations. The current architecture has a bottleneck in this part, in a way that
- *    re-fetching will always take as long as the slowest of the members.
- * 3) Data obtained from the feature providers changes on each call (three different results).
- * 4) In these differences features get added, deleted, and unchanged. (sometimes both)
- * 5) In the updates, some providers provide repeated feature ids.
- * 6) In these updates, sometimes features get deleted in a provider, but added in another one (so they're not fully deleted.)
- */
-describe('Get features from multiple providers that differ in polling intervals and fetch delay.', () => {
+describe('ExperimentationServiceBase', () => {
+    let telemetry: ExperimentationTelemetryMock;
+    let storage: KeyValueStorageMock;
+    let cached: FeatureData;
+    let fresh: FeatureData;
+    let services: ExperimentationServiceMock[];
 
-    let prepopulatedTestSpecs: FeatureProviderTestSpec[] = [
-        {
-            fetchDelay: 200,
-            fetchResolver: new FetchResolver(
-                { features: ['kirby', 'falco', 'fox', 'joker'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'kirby', 'hp1': 20 }}] }
-            ),
-        },
-        {
-            fetchDelay: 50,
-            fetchResolver: new FetchResolver(
-                { features: ['lucario', 'kirby', 'ness'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'lucario', 'hp2': 50 }}] }
-            ),
-        },
-        {
-            fetchDelay: 100,
-            fetchResolver: new FetchResolver(
-                { features: ['mario', 'kingdedede', 'lucario'], assignmentContext: '', configs: [ { Id: 'test2', Parameters: { 'character1': 'mario', 'hp1': 40 }}] }
-            ),
-        },
-    ]
-    let prepopulatedStorage = new KeyValueStorageMock();
-    prepopulatedStorage.setValue<FeatureData>('StorageKey', { features: ['initial'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'foo': 42 } }] });
-    let prepopulatedService: ExperimentationServiceMock | undefined; 
-
-    // isCachedFlightEnabled called before any polling should return
-    // the initial cache contents.
-    it('isCachedFlightEnabled should return cached features.', async () => {
-        prepopulatedService = new ExperimentationServiceMock([], prepopulatedTestSpecs, 1000, undefined, prepopulatedStorage);
-        let initial = await prepopulatedService.isCachedFlightEnabled('initial');
-
-        expect(initial).to.equal(true);
-    });
-
-    // getTreatmentVariable called before any polling should return
-    // the initial cache contents.
-    it('getTreatmentVariable should return cached treatment variables.', async () => {
-        await prepopulatedService!.initializePromise;
-        let initialConfig = prepopulatedService!.getTreatmentVariable<number>('test', 'foo');
-
-        expect(initialConfig).to.equal(42);
-    });
-
-    // After the first poll, isCachedFlightEnabled should still return the initial
-    // feature set to avoid changing flights mid-session due to a background poll.
-    it('background poll should not change in memory features.', async () => {
-        // Wait for the experimentation service to do an initial poll.
-        await new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 200);
+    beforeEach(() => {
+        telemetry = new ExperimentationTelemetryMock();
+        storage = new KeyValueStorageMock();
+        services = [];
+        cached = createFeatureData({
+            features: ['cachedFlight'],
+            assignmentContext: 'cached;',
+            configs: [
+                {
+                    Id: 'vscode',
+                    Parameters: { variant: 'control', enabled: false, rollout: 0, label: '' },
+                },
+            ],
         });
-
-        let initial = await prepopulatedService!.isCachedFlightEnabled('initial');
-        let kirby = await prepopulatedService!.isCachedFlightEnabled('kirby');
-        let falco = await prepopulatedService!.isCachedFlightEnabled('falco');
-        let fox = await prepopulatedService!.isCachedFlightEnabled('fox');
-        let joker = await prepopulatedService!.isCachedFlightEnabled('joker');
-        let lucario = await prepopulatedService!.isCachedFlightEnabled('lucario');
-        let ness = await prepopulatedService!.isCachedFlightEnabled('ness');
-        let mario = await prepopulatedService!.isCachedFlightEnabled('mario');
-        let kingdedede = await prepopulatedService!.isCachedFlightEnabled('kingdedede');
-
-        expect(initial).to.equal(true);
-        expect(kirby).to.equal(false);
-        expect(falco).to.equal(false);
-        expect(fox).to.equal(false);
-        expect(joker).to.equal(false);
-        expect(lucario).to.equal(false);
-        expect(ness).to.equal(false);
-        expect(mario).to.equal(false);
-        expect(kingdedede).to.equal(false);
-    });
-
-    // After the first poll, getTreatmentVariable should still return the initial
-    // config to avoid changing variables mid-session due to a background poll.
-    it('background poll should not change in memory variables.', async () => {
-        await prepopulatedService!.initializePromise;
-
-        let testCharacter1 = prepopulatedService!.getTreatmentVariable<string>('test', 'character1');
-        let testHP1 = prepopulatedService!.getTreatmentVariable<number>('test', 'hp1');
-        let testCharacter2 = prepopulatedService!.getTreatmentVariable<string>('test', 'character2');
-        let testHP2 = prepopulatedService!.getTreatmentVariable<number>('test', 'hp2');
-        let test2Character1 = prepopulatedService!.getTreatmentVariable<string>('test2', 'character1');
-        let test2HP1 = prepopulatedService!.getTreatmentVariable<number>('test2', 'hp1');
-
-        expect(testCharacter1).to.equal(undefined);
-        expect(testHP1).to.equal(undefined);
-        expect(testCharacter2).to.equal(undefined);
-        expect(testHP2).to.equal(undefined);
-        expect(test2Character1).to.equal(undefined);
-        expect(test2HP1).to.equal(undefined);
-    });
-
-    let prepopulatedService2: ExperimentationServiceMock | undefined;
-
-    // This test simulates starting a new session with the cache from the previous session.
-    // Now a call to isCachedFlightEnables should return the features from the first result set.
-    it('new session should have polled features from previous session in cache.', async () => {
-        prepopulatedService2 = new ExperimentationServiceMock([], prepopulatedTestSpecs, 1000, undefined, prepopulatedStorage);
-
-        let initial = await prepopulatedService2.isCachedFlightEnabled('initial');
-        let kirby = await prepopulatedService2.isCachedFlightEnabled('kirby');
-        let falco = await prepopulatedService2.isCachedFlightEnabled('falco');
-        let fox = await prepopulatedService2.isCachedFlightEnabled('fox');
-        let joker = await prepopulatedService2.isCachedFlightEnabled('joker');
-        let lucario = await prepopulatedService2.isCachedFlightEnabled('lucario');
-        let ness = await prepopulatedService2.isCachedFlightEnabled('ness');
-        let mario = await prepopulatedService2.isCachedFlightEnabled('mario');
-        let kingdedede = await prepopulatedService2.isCachedFlightEnabled('kingdedede');
-
-        expect(initial).to.equal(false);
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
-        expect(fox).to.equal(true);
-        expect(joker).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(kingdedede).to.equal(true);
-    });
-
-    // This test simulates starting a new session with the cache from the previous session.
-    // Now a call to getTreatmentVariable should return the configs from the first result set.
-    it('new session should have polled configs from previous session in cache.', async () => {
-        await prepopulatedService2!.initializePromise;
-
-        let testCharacter1 = prepopulatedService2!.getTreatmentVariable<string>('test', 'character1');
-        let testHP1 = prepopulatedService2!.getTreatmentVariable<number>('test', 'hp1');
-        let testCharacter2 = prepopulatedService2!.getTreatmentVariable<string>('test', 'character2');
-        let testHP2 = prepopulatedService2!.getTreatmentVariable<number>('test', 'hp2');
-        let test2Character1 = prepopulatedService2!.getTreatmentVariable<string>('test2', 'character1');
-        let test2HP1 = prepopulatedService2!.getTreatmentVariable<number>('test2', 'hp1');
-
-        expect(testCharacter1).to.equal('kirby');
-        expect(testHP1).to.equal(20);
-        expect(testCharacter2).to.equal('lucario');
-        expect(testHP2).to.equal(50);
-        expect(test2Character1).to.equal('mario');
-        expect(test2HP1).to.equal(40);
-    });
-
-    let testSpecs: FeatureProviderTestSpec[] = [
-        {
-            fetchDelay: 200,
-            fetchResolver: new FetchResolver(
-                { features: ['kirby', 'falco', 'fox', 'joker'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'kirby', 'hp1': 20 }}] }, // First fetch will return this array.
-                { features: ['joker', 'palutena', 'fox'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'joker', 'hp1': 40 }}] }, // second fetch will return this array.
-                { features: ['falco'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'falco', 'hp1': 30 }}] }, // third fetch will return this array.
-            ),
-        },
-        {
-            fetchDelay: 50,
-            fetchResolver: new FetchResolver(
-                { features: ['lucario', 'kirby', 'ness'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'lucario', 'isPink': false }}] }, // First fetch will return this array.
-                { features: ['kirby'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'kirby', 'isPink': true }}] }, // Second fetch will return this array.
-                { features: ['kirby'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'kirby', 'isPink': true }}] }, // Third fetch will return this array.
-            ),
-        },
-        {
-            fetchDelay: 100,
-            fetchResolver: new FetchResolver(
-                { features: ['mario', 'kingdedede', 'lucario'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'mario', 'hp3': 40 }}] }, // First fetch will return this array.
-                { features: ['falco', 'ness', 'mario', 'lucario', 'kingdedede'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'falco', 'hp3': 2 }}] }, // Second fetch will return this array.
-                { features: ['ness', 'mario', 'lucario', 'ike'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'ness', 'hp3': 80 }}] }// Third fetch will return this array.
-            ),
-        },
-    ];
-
-    let storage = new KeyValueStorageMock();
-    let service: ExperimentationServiceMock;
-
-    // The current result will be:
-    // ['kirby', 'falco', 'fox', 'joker'] from provider 1
-    // ['lucario', 'kirby', 'ness'] from provider 2
-    // ['mario', 'kingdedede', 'lucario'] from provider 3
-    // it's total 10 but we subtract two because kirby and lucario are repeated.
-    it('should fetch elements from all providers, and save them to cache.', async () => {
-        service = new ExperimentationServiceMock([], testSpecs, 1000, undefined, storage);
-        // Wait for the experimentation service to do an initial poll
-        // so we can check the cached features.
-        await new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 400);
+        fresh = createFeatureData({
+            features: ['freshFlight'],
+            assignmentContext: 'fresh;',
+            configs: [{ Id: 'vscode', Parameters: { variant: 'treatment' } }],
         });
-
-        // No need to call isFlightEnabledAsync because the ExperimentationService should
-        // request features from providers on start.
-        let kirby = await service.isCachedFlightEnabled('kirby');
-        let falco = await service.isCachedFlightEnabled('falco');
-        let fox = await service.isCachedFlightEnabled('fox');
-        let joker = await service.isCachedFlightEnabled('joker');
-        let lucario = await service.isCachedFlightEnabled('lucario');
-        let ness = await service.isCachedFlightEnabled('ness');
-        let mario = await service.isCachedFlightEnabled('mario');
-        let kingdedede = await service.isCachedFlightEnabled('kingdedede');
-
-        // validate that all the correct elements are inside the array.
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
-        expect(fox).to.equal(true);
-        expect(joker).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(kingdedede).to.equal(true);
     });
 
-    it('should fetch configs from all providers, and save them to cache.', async () => {
+    afterEach(() => {
+        services.forEach((service) => service.dispose());
+    });
+
+    function createService(providers?: IFeatureProvider[]) {
+        const service = new ExperimentationServiceMock(providers, {
+            telemetry,
+            keyValueStorage: storage,
+        });
+        services.push(service);
+        return service;
+    }
+
+    it('uses the built-in storage and default storage key when none are supplied', async () => {
+        const service = new ExperimentationServiceMock([new BaseFeatureProviderMock(fresh)]);
+        services.push(service);
+        await service.initializePromise;
+        await service.refresh();
+
+        expect(service.cacheStorage).toBeInstanceOf(MemoryKeyValueStorage);
+        expect(await service.cacheStorage?.getValue('ABExp.Features')).toEqual(fresh);
+    });
+
+    it.each([undefined, []])('returns empty data when providers are %j', async (providers) => {
+        const service = createService(providers);
         await service.initializePromise;
 
-        // No need to call getTreatmentVariableAsync because the ExperimentationService should
-        // request configs from providers on start.
-        let character1 = service.getTreatmentVariable<string>('test', 'character1');
-        let hp1 = service.getTreatmentVariable<number>('test', 'hp1');
-        let character2 = service.getTreatmentVariable<string>('test', 'character2');
-        let isPink = service.getTreatmentVariable<boolean>('test', 'isPink');
-        let character3 = service.getTreatmentVariable<string>('test', 'character3');
-        let hp3 = service.getTreatmentVariable<number>('test', 'hp3');
-
-        expect(character1).to.equal('kirby');
-        expect(hp1).to.equal(20);
-        expect(character2).to.equal('lucario');
-        expect(isPink).to.equal(false);
-        expect(character3).to.equal('mario');
-        expect(hp3).to.equal(40);
+        expect(await service.refresh()).toEqual(createFeatureData());
+        expect(service.isFlightEnabled('unknown')).toBe(false);
+        expect(service.getTreatmentVariable('missing', 'variant')).toBeUndefined();
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('');
     });
 
-    // The second result should be:
-    // ['joker', 'palutena', 'fox'] from provider 1 +
-    // ['kirby'] from provider 2 +
-    // ['falco', 'ness', 'mario', 'lucario', 'kingdedede'] from provider 3
-    it('should update the cache (and reset the polling clock) if isFlightEnabledAsync is called again.', async () => {
-        // Calling isFlightEnabledAsync will ovverride the previously
-        // fetched features.
-        let joker = await service.isFlightEnabledAsync('joker');
-        let palutena = await service.isCachedFlightEnabled('palutena');
-        let fox = await service.isCachedFlightEnabled('fox');
-        let kirby = await service.isCachedFlightEnabled('kirby');
-        let falco = await service.isCachedFlightEnabled('falco');
-        let ness = await service.isCachedFlightEnabled('ness');
-        let mario = await service.isCachedFlightEnabled('mario');
-        let lucario = await service.isCachedFlightEnabled('lucario');
-        let kingdedede = await service.isCachedFlightEnabled('kingdedede');
-
-        // validate that all the correct elements are inside the array.
-        expect(joker).to.equal(true);
-        expect(palutena).to.equal(true);
-        expect(fox).to.equal(true);
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(kingdedede).to.equal(true);
-    });
-
-    it('should update the cached configs (and reset the polling clock) if isFlightEnabledAsync is called again.', async () => {
-        let character1 = service.getTreatmentVariable<string>('test', 'character1');
-        let hp1 = service.getTreatmentVariable<number>('test', 'hp1');
-        let character2 = service.getTreatmentVariable<string>('test', 'character2');
-        let isPink = service.getTreatmentVariable<boolean>('test', 'isPink');
-        let character3 = service.getTreatmentVariable<string>('test', 'character3');
-        let hp3 = service.getTreatmentVariable<number>('test', 'hp3');
-
-        expect(character1).to.equal('joker');
-        expect(hp1).to.equal(40);
-        expect(character2).to.equal('kirby');
-        expect(isPink).to.equal(true);
-        expect(character3).to.equal('falco');
-        expect(hp3).to.equal(2);
-    });
-
-    // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco']
-    it('should automatically refetch the third result and update cache.', async () => {
-        await new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 1500); // 1200 ms, because it takes 1000 ms to do the polling, and 200ms to complete the fetch, + 300ms buffer.
+    it('loads and updates a custom cache key without touching other clients', async () => {
+        storage.setValue('extension.cache', cached);
+        storage.setValue('ABExp.Features', 'unrelated');
+        const service = new ExperimentationServiceMock([new BaseFeatureProviderMock(fresh)], {
+            telemetry,
+            keyValueStorage: storage,
+            storageKey: 'extension.cache',
         });
+        services.push(service);
+        await service.initializePromise;
+        expect(storage.reads).toEqual(['extension.cache']);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
 
-        let features = await storage.getValue<FeatureData>('StorageKey');
-
-        // No need to call IsFlightEnabledAsync this time, as flights were updated via polling.
-        // However, the changes should only be in the cache, not in memory. We don't want to 
-        // change flight info mid-session due to a background poll.
-        let ness = features!.features.indexOf('ness') >= 0;
-        let mario = features!.features.indexOf('mario') >= 0;
-        let lucario = features!.features.indexOf('lucario') >= 0;
-        let ike = features!.features.indexOf('ike') >= 0;
-        let kirby = features!.features.indexOf('kirby') >= 0;
-        let falco = features!.features.indexOf('falco') >= 0;
-
-        // validate that all the correct elements are inside the array.
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(ike).to.equal(true);
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
+        await service.refresh();
+        expect(await storage.getValue('extension.cache')).toEqual(fresh);
+        expect(await storage.getValue('ABExp.Features')).toBe('unrelated');
     });
 
-    it('should automatically refetch the third result and update cached config.', async () => {
-        let features = await storage.getValue<FeatureData>('StorageKey');
+    it('waits for storage before answering a cached flight query', async () => {
+        const cacheRead = new Deferred<void>();
+        storage.setValue('ABExp.Features', cached);
+        storage.readBarrier = cacheRead.promise;
+        const service = createService();
 
-        expect(features!.configs).toEqual([{ Id: 'test', Parameters: { character1: 'falco', hp1: 30, character2: 'kirby', isPink: true, character3: 'ness', hp3: 80 } }]);
+        const enabled = service.isCachedFlightEnabled('cachedFlight');
+        cacheRead.resolve();
+
+        expect(await enabled).toBe(true);
+        await service.initializePromise;
+        expect(telemetry.eventsNamed('query-expfeature')[0].sharedProperties).toEqual(
+            new Map([['assignmentContext', 'cached;']]),
+        );
     });
 
-    // Third result should be: ['ness', 'mario', 'lucario', 'ike', 'kirby', 'falco'], however, because it was
-    // due to a background poll, it shouldn't update the in memory features. The in memory features
-    // should match those from the second result.
-    it('background poll should not update in memory features.', async () => {
-        // The changes from the background poll should only be in the cache, not in memory. We don't want to 
-        // change flight info mid-session due to a background poll.
-        let joker = await service.isCachedFlightEnabled('joker');
-        let palutena = await service.isCachedFlightEnabled('palutena');
-        let fox = await service.isCachedFlightEnabled('fox');
-        let kirby = await service.isCachedFlightEnabled('kirby');
-        let falco = await service.isCachedFlightEnabled('falco');
-        let ness = await service.isCachedFlightEnabled('ness');
-        let mario = await service.isCachedFlightEnabled('mario');
-        let lucario = await service.isCachedFlightEnabled('lucario');
-        let kingdedede = await service.isCachedFlightEnabled('kingdedede');
+    it('supports caches written before treatment configs were introduced', async () => {
+        storage.setValue('ABExp.Features', {
+            features: ['cachedFlight'],
+            assignmentContext: 'legacy;',
+        });
+        const service = createService();
+        await service.initializePromise;
 
-        // validate that all the correct elements are inside the array.
-        expect(joker).to.equal(true);
-        expect(palutena).to.equal(true);
-        expect(fox).to.equal(true);
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(kingdedede).to.equal(true);
+        expect(service.isFlightEnabled('cachedFlight')).toBe(true);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBeUndefined();
     });
 
-    it('background poll should not update in memory configs.', async () => {
-        // The changes from the background poll should only be in the cache, not in memory. We don't want to 
-        // change variables mid-session due to a background poll.
-        let character1 = service.getTreatmentVariable<string>('test', 'character1');
-        let hp1 = service.getTreatmentVariable<number>('test', 'hp1');
-        let character2 = service.getTreatmentVariable<string>('test', 'character2');
-        let isPink = service.getTreatmentVariable<boolean>('test', 'isPink');
-        let character3 = service.getTreatmentVariable<string>('test', 'character3');
-        let hp3 = service.getTreatmentVariable<number>('test', 'hp3');
+    it('exposes storage read errors through initializePromise', async () => {
+        const error = new Error('Storage unavailable');
+        vi.spyOn(storage, 'getValue').mockRejectedValue(error);
+        const service = createService();
 
-        expect(character1).to.equal('joker');
-        expect(hp1).to.equal(40);
-        expect(character2).to.equal('kirby');
-        expect(isPink).to.equal(true);
-        expect(character3).to.equal('falco');
-        expect(hp3).to.equal(2);
-    });
-});
-
-describe('Experimentation Service general tests', () => {
-    it('should throw if Ms are less than 1000 and different from 0', () => {
-        expect(
-            () =>
-                new ExperimentationServiceMock(
-                    [], [{ fetchDelay: 200, fetchResolver: new FetchResolver({ features: ['result'], assignmentContext: '', configs: [] }) }],
-                    500,
-                ),
-        ).toThrow();
+        await expect(service.initializePromise).rejects.toBe(error);
     });
 
-    it('should combine filters from filter providers', async () => {
-        let service = new FilteredExperimentationServiceMock([
-            new ExperimentationFilterProviderOneFilterMock(),
-            new ExperimentationFilterProviderTwoFilterMock(),
+    it('propagates initialization errors from asynchronous lookups without issuing requests', async () => {
+        const error = new Error('Storage unavailable');
+        vi.spyOn(storage, 'getValue').mockRejectedValue(error);
+        const provider = new BaseFeatureProviderMock(fresh);
+        const service = createService([provider]);
+
+        await Promise.all([
+            expect(service.initializePromise).rejects.toBe(error),
+            expect(service.isFlightEnabledAsync('freshFlight')).rejects.toBe(error),
+            expect(service.getTreatmentVariableAsync('vscode', 'variant')).rejects.toBe(error),
+            expect(service.getTreatmentVariableAsync('vscode', 'variant', true)).rejects.toBe(
+                error,
+            ),
         ]);
-        service.isFlightEnabledAsync('anyflight');
-        let filters = service.featureProvider!.lastFilters!;
-        expect(filters.size).to.equal(3);
+        expect(provider.fetch).not.toHaveBeenCalled();
     });
-});
 
-describe('Telemetry tests', () => {
-    it('Shared properties should be set on isCachedFlightEnabled', async () => {
-        const experimentationTelemetryMock = new ExperimentationTelemetryMock();
-        const keyValueStorageMock = new KeyValueStorageMock();
-        keyValueStorageMock.setValue<FeatureData>('StorageKey', { features: ['testFlight'], assignmentContext: 'tf', configs: [] });
-        const service = new ExperimentationServiceMock([], [], 10000, experimentationTelemetryMock, keyValueStorageMock);
+    it('initializes from cache independently of an in-flight initial request', async () => {
+        const pending = new Deferred<FeatureData>();
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise);
+        storage.setValue('ABExp.Features', cached);
+        const service = createService([provider]);
+        const request = service.refresh();
+        const initiallyFetched = vi.fn();
+        void service.initialFetch.then(initiallyFetched);
 
-        await service.isCachedFlightEnabled('testFlight');
+        await service.initializePromise;
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+        expect(initiallyFetched).not.toHaveBeenCalled();
 
-        expect('tf').to.equal(experimentationTelemetryMock.sharedProperties.get('AssignmentContextTelemetryEventName'));
-        expect('tf').to.equal(experimentationTelemetryMock.postedEvents[0].sharedProperties.get('AssignmentContextTelemetryEventName'));
+        pending.resolve(fresh);
+        await request;
+        await service.initialFetch;
+        expect(initiallyFetched).toHaveBeenCalledTimes(1);
+        expect(await storage.getValue('ABExp.Features')).toEqual(fresh);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
     });
-});
 
-describe('Auto-polling disabled test', () => {
-    let testSpecs: FeatureProviderTestSpec[] = [
-        {
-            fetchDelay: 200,
-            fetchResolver: new FetchResolver(
-                { features: ['kirby', 'falco', 'fox', 'joker'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'kirby', 'hp1': 20 }}] }, // First fetch will return this array.
-                { features: ['joker', 'palutena', 'fox'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'joker', 'hp1': 40 }}] }, // second fetch will return this array.
-                { features: ['falco'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character1': 'falco', 'hp1': 30 }}] }, // third fetch will return this array.
-            ),
-        },
-        {
-            fetchDelay: 50,
-            fetchResolver: new FetchResolver(
-                { features: ['lucario', 'kirby', 'ness'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'lucario', 'isPink': false }}] }, // First fetch will return this array.
-                { features: ['kirby'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'kirby', 'isPink': true }}] }, // Second fetch will return this array.
-                { features: ['kirby'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character2': 'kirby', 'isPink': true }}] }, // Third fetch will return this array.
-            ),
-        },
-        {
-            fetchDelay: 100,
-            fetchResolver: new FetchResolver(
-                { features: ['mario', 'kingdedede', 'lucario'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'mario', 'hp3': 40 }}] }, // First fetch will return this array.
-                { features: ['falco', 'ness', 'mario', 'lucario', 'kingdedede'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'falco', 'hp3': 2 }}] }, // Second fetch will return this array.
-                { features: ['ness', 'mario', 'lucario', 'ike'], assignmentContext: '', configs: [ { Id: 'test', Parameters: { 'character3': 'ness', 'hp3': 80 }}] }// Third fetch will return this array.
-            ),
-        },
-    ];
-    
-    // The current result will be:
-    // ['kirby', 'falco', 'fox', 'joker'] from provider 1
-    // ['lucario', 'kirby', 'ness'] from provider 2
-    // ['mario', 'kingdedede', 'lucario'] from provider 3
-    // it's total 10 but we subtract two because kirby and lucario are repeated.
-    it('should fetch elements from all providers with no autopolling, and save them to cache.', async () => {
-        let storage = new KeyValueStorageMock();
-        let service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-        // Wait for the experimentation service to do an initial poll
-        // so we can check the cached features.
-        await new Promise<void>((resolve) => {
-            setTimeout(() => resolve(), 400);
+    it('merges in provider order, not completion order, including falsy overrides', async () => {
+        const first = new Deferred<FeatureData>();
+        const second = new Deferred<FeatureData>();
+        const legacy = new BaseFeatureProviderMock();
+        const assignments = new BaseFeatureProviderMock();
+        legacy.fetch.mockReturnValueOnce(first.promise);
+        assignments.fetch.mockReturnValueOnce(second.promise);
+        const service = createService([legacy, assignments]);
+        await service.initializePromise;
+
+        const request = service.refresh();
+        expect(legacy.fetch).toHaveBeenCalledTimes(1);
+        expect(assignments.fetch).toHaveBeenCalledTimes(1);
+        second.resolve(
+            createFeatureData({
+                features: ['shared', 'new'],
+                assignmentContext: 'new;',
+                configs: [{ Id: 'vscode', Parameters: { enabled: false, rollout: 0, label: '' } }],
+            }),
+        );
+        expect(storage.writes).toHaveLength(0);
+        first.resolve(
+            createFeatureData({
+                features: ['legacy', 'shared'],
+                assignmentContext: 'legacy',
+                configs: [
+                    {
+                        Id: 'vscode',
+                        Parameters: { enabled: true, rollout: 50, label: 'old', keep: 1 },
+                    },
+                    { Id: 'extension', Parameters: { enabled: true } },
+                ],
+            }),
+        );
+
+        const merged = await request;
+        expect(merged).toEqual({
+            features: ['legacy', 'shared', 'new'],
+            assignmentContext: 'legacy;new;',
+            configs: [
+                { Id: 'vscode', Parameters: { enabled: false, rollout: 0, label: '', keep: 1 } },
+                { Id: 'extension', Parameters: { enabled: true } },
+            ],
         });
+        expect(await storage.getValue('ABExp.Features')).toEqual(merged);
+        expect(service.getTreatmentVariable('extension', 'enabled')).toBe(true);
+        expect(service.getTreatmentVariable('vscode', 'enabled')).toBe(false);
+    });
 
-        // No need to call isFlightEnabledAsync because the ExperimentationService should
-        // request features from providers on start.
-        let kirby = await service.isCachedFlightEnabled('kirby');
-        let falco = await service.isCachedFlightEnabled('falco');
-        let fox = await service.isCachedFlightEnabled('fox');
-        let joker = await service.isCachedFlightEnabled('joker');
-        let lucario = await service.isCachedFlightEnabled('lucario');
-        let ness = await service.isCachedFlightEnabled('ness');
-        let mario = await service.isCachedFlightEnabled('mario');
-        let kingdedede = await service.isCachedFlightEnabled('kingdedede');
+    it.each([
+        ['legacy', 'new', 'legacy;new'],
+        ['legacy;', 'new;', 'legacy;new;'],
+        ['', 'new;', 'new;'],
+        ['legacy;', '', 'legacy;'],
+        ['', '', ''],
+    ])(
+        'joins assignment contexts %j and %j without losing segment boundaries',
+        async (a, b, result) => {
+            const service = createService([
+                new BaseFeatureProviderMock(createFeatureData({ assignmentContext: a })),
+                new BaseFeatureProviderMock(createFeatureData({ assignmentContext: b })),
+            ]);
+            await service.initializePromise;
 
-        // validate that all the correct elements are inside the array.
-        expect(kirby).to.equal(true);
-        expect(falco).to.equal(true);
-        expect(fox).to.equal(true);
-        expect(joker).to.equal(true);
-        expect(lucario).to.equal(true);
-        expect(ness).to.equal(true);
-        expect(mario).to.equal(true);
-        expect(kingdedede).to.equal(true);
+            expect((await service.refresh()).assignmentContext).toBe(result);
+            expect(telemetry.sharedProperties.get('assignmentContext')).toBe(result);
+        },
+    );
+
+    it("does not mutate provider configs or retain another provider's overrides on retry", async () => {
+        const original = structuredClone(cached);
+        const legacy = new BaseFeatureProviderMock(cached);
+        const assignments = new BaseFeatureProviderMock(fresh);
+        const service = createService([legacy, assignments]);
+        await service.initializePromise;
+        await service.refresh();
+
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('treatment');
+        expect(cached).toEqual(original);
+
+        assignments.fetch.mockRejectedValueOnce(new Error('Assignments unavailable'));
+        await service.refresh(true);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+        expect(cached).toEqual(original);
+    });
+
+    it('replaces rather than accumulates unconsumed features on later fetches', async () => {
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockResolvedValueOnce(cached).mockResolvedValueOnce(fresh);
+        const service = createService([provider]);
+        await service.initializePromise;
+        await service.refresh();
+
+        expect(await service.refresh()).toEqual(fresh);
+        expect(service.isFlightEnabled('cachedFlight')).toBe(false);
+        expect(service.getTreatmentVariable('vscode', 'enabled')).toBeUndefined();
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('fresh;');
+    });
+
+    it.each(['flight', 'cached flight', 'treatment'])(
+        'pins session data after a %s lookup while persisting updates for the next session',
+        async (lookup) => {
+            storage.setValue('ABExp.Features', cached);
+            const service = createService([new BaseFeatureProviderMock(fresh)]);
+            await service.initializePromise;
+            if (lookup === 'flight') {
+                expect(service.isFlightEnabled('cachedFlight')).toBe(true);
+            } else if (lookup === 'cached flight') {
+                expect(await service.isCachedFlightEnabled('cachedFlight')).toBe(true);
+            } else {
+                expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+            }
+
+            await service.refresh();
+            expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+            expect(service.isFlightEnabled('freshFlight')).toBe(false);
+            expect(telemetry.sharedProperties.get('assignmentContext')).toBe('cached;');
+            expect(await storage.getValue('ABExp.Features')).toEqual(fresh);
+
+            const nextSession = createService();
+            await nextSession.initializePromise;
+            expect(nextSession.getTreatmentVariable('vscode', 'variant')).toBe('treatment');
+            expect(nextSession.isFlightEnabled('cachedFlight')).toBe(false);
+        },
+    );
+
+    it('allows explicit asynchronous lookups to change already-consumed data', async () => {
+        storage.setValue('ABExp.Features', cached);
+        const service = createService([new BaseFeatureProviderMock(fresh)]);
+        await service.initializePromise;
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+
+        expect(await service.getTreatmentVariableAsync('vscode', 'variant')).toBe('treatment');
+        expect(await service.isFlightEnabledAsync('freshFlight')).toBe(true);
+        expect(service.isFlightEnabled('cachedFlight')).toBe(false);
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('fresh;');
+    });
+
+    it('keeps the explicitly refreshed snapshot stable during subsequent background updates', async () => {
+        storage.setValue('ABExp.Features', cached);
+        const provider = new BaseFeatureProviderMock(fresh);
+        const service = createService([provider]);
+        await service.initializePromise;
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+        expect(await service.getTreatmentVariableAsync('vscode', 'variant')).toBe('treatment');
+
+        const next = createFeatureData({
+            assignmentContext: 'next;',
+            configs: [{ Id: 'vscode', Parameters: { variant: 'next' } }],
+        });
+        provider.fetch.mockResolvedValueOnce(next);
+        await service.refresh();
+
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('treatment');
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('fresh;');
+        expect(await storage.getValue('ABExp.Features')).toEqual(next);
+    });
+
+    it('honors explicit refreshes that join an already-running background fetch', async () => {
+        const pending = new Deferred<FeatureData>();
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise);
+        const getFeatures = vi.spyOn(provider, 'getFeatures');
+        storage.setValue('ABExp.Features', cached);
+        const service = createService([provider]);
+        await service.initializePromise;
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+
+        const background = service.refresh();
+        const variable = service.getTreatmentVariableAsync('vscode', 'variant');
+        const flight = service.isFlightEnabledAsync('freshFlight');
+        pending.resolve(fresh);
+        await background;
+
+        expect(await variable).toBe('treatment');
+        expect(await flight).toBe(true);
+        expect(getFeatures).toHaveBeenCalledTimes(1);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('treatment');
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('fresh;');
+    });
+
+    it('coalesces concurrent refreshes and starts a new request after completion', async () => {
+        const pending = new Deferred<FeatureData>();
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(fresh);
+        const getFeatures = vi.spyOn(provider, 'getFeatures');
+        const service = createService([provider]);
+        await service.initializePromise;
+
+        const requests = [service.refresh(), service.refresh(), service.refresh()];
+        pending.resolve(cached);
+        expect(await Promise.all(requests)).toEqual([cached, cached, cached]);
+        expect(getFeatures).toHaveBeenCalledTimes(1);
+
+        expect(await service.refresh()).toEqual(fresh);
+        expect(getFeatures).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([true, false])(
+        'isolates a failed provider (failure first: %s)',
+        async (failureFirst) => {
+            const good = new BaseFeatureProviderMock(fresh);
+            const bad = new BaseFeatureProviderMock();
+            bad.fetch.mockRejectedValue(new Error('Endpoint unavailable'));
+            const service = createService(failureFirst ? [bad, good] : [good, bad]);
+            await service.initializePromise;
+
+            expect(await service.refresh()).toEqual(fresh);
+            await service.initialFetch;
+            expect(await storage.getValue('ABExp.Features')).toEqual(fresh);
+        },
+    );
+
+    it('preserves the cache when all providers fail, releases waiters, and retries', async () => {
+        const pending = new Deferred<FeatureData>();
+        const first = new BaseFeatureProviderMock();
+        first.fetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(fresh);
+        const second = new BaseFeatureProviderMock();
+        second.fetch.mockRejectedValue(new Error('Other endpoint unavailable'));
+        storage.setValue('ABExp.Features', cached);
+        const service = createService([first, second]);
+        await service.initializePromise;
+
+        const requests = [service.refresh(), service.refresh()];
+        pending.reject(new Error('Offline'));
+        expect(await Promise.all(requests)).toEqual([cached, cached]);
+        await service.initialFetch;
+        expect(storage.writes).toHaveLength(1);
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('cached;');
+
+        expect(await service.refresh()).toEqual(fresh);
+        expect(first.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('distinguishes a successful empty response from a failed request', async () => {
+        storage.setValue('ABExp.Features', cached);
+        const empty = createFeatureData();
+        const service = createService([new BaseFeatureProviderMock(empty)]);
+        await service.initializePromise;
+
+        expect(await service.refresh()).toEqual(empty);
+        await service.initialFetch;
+        expect(await storage.getValue('ABExp.Features')).toEqual(empty);
+        expect(service.isFlightEnabled('cachedFlight')).toBe(false);
+    });
+
+    it.each<{ name: string; configs: ConfigData[] }>([
+        { name: 'empty assignments', configs: [] },
+        { name: 'disabled flag', configs: [{ Id: 'vscode', Parameters: { enabled: false } }] },
+        { name: 'zero rollout', configs: [{ Id: 'vscode', Parameters: { rollout: 0 } }] },
+        { name: 'empty label', configs: [{ Id: 'vscode', Parameters: { label: '' } }] },
+    ])('does not overwrite fetched $name with a slower stale cache read', async ({ configs }) => {
+        const cacheRead = new Deferred<void>();
+        storage.setValue('ABExp.Features', cached);
+        storage.readBarrier = cacheRead.promise;
+        const data = createFeatureData({ assignmentContext: 'fresh;', configs });
+        const service = createService([new BaseFeatureProviderMock(data)]);
+
+        expect(await service.refresh()).toEqual(data);
+        cacheRead.resolve();
+        await service.initializePromise;
+
+        expect(service.isFlightEnabled('cachedFlight')).toBe(false);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBeUndefined();
+        expect(service.getTreatmentVariable('vscode', 'enabled')).toBe(
+            configs[0]?.Parameters.enabled,
+        );
+        expect(telemetry.sharedProperties.get('assignmentContext')).toBe('fresh;');
+    });
+
+    it.each<[string, boolean | number | string]>([
+        ['enabled', false],
+        ['rollout', 0],
+        ['label', ''],
+        ['variant', 'control'],
+    ])('returns cached %s without fetching, including falsy values', async (name, value) => {
+        storage.setValue('ABExp.Features', cached);
+        const provider = new BaseFeatureProviderMock(fresh);
+        const service = createService([provider]);
+        await service.initializePromise;
+
+        expect(await service.getTreatmentVariableAsync('vscode', name, true)).toBe(value);
+        expect(provider.fetch).not.toHaveBeenCalled();
+    });
+
+    it('waits for initialization when checking the treatment cache', async () => {
+        const cacheRead = new Deferred<void>();
+        storage.setValue('ABExp.Features', cached);
+        storage.readBarrier = cacheRead.promise;
+        const provider = new BaseFeatureProviderMock(fresh);
+        const service = createService([provider]);
+
+        const result = service.getTreatmentVariableAsync('vscode', 'variant', true);
+        cacheRead.resolve();
+
+        expect(await result).toBe('control');
+        expect(provider.fetch).not.toHaveBeenCalled();
+    });
+
+    it('returns a cache hit during a background fetch without opting into its updated assignments', async () => {
+        const pending = new Deferred<FeatureData>();
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise);
+        storage.setValue('ABExp.Features', cached);
+        const service = createService([provider]);
+        await service.initializePromise;
+        const background = service.refresh();
+
+        expect(await service.getTreatmentVariableAsync('vscode', 'variant', true)).toBe('control');
+        pending.resolve(fresh);
+        await background;
+
+        expect(provider.fetch).toHaveBeenCalledTimes(1);
+        expect(service.getTreatmentVariable('vscode', 'variant')).toBe('control');
+        expect(await storage.getValue('ABExp.Features')).toEqual(fresh);
+        expect(
+            telemetry.eventsNamed('query-expfeature')[0].sharedProperties.get('assignmentContext'),
+        ).toBe('cached;');
+    });
+
+    it('logs cache-miss lookups only after the fetched assignment context is available', async () => {
+        const service = createService([new BaseFeatureProviderMock(fresh)]);
+        await service.initializePromise;
+
+        expect(await service.getTreatmentVariableAsync('vscode', 'variant', true)).toBe(
+            'treatment',
+        );
+        expect(telemetry.eventsNamed('query-expfeature')).toEqual([
+            {
+                eventName: 'query-expfeature',
+                args: new Map([['ABExp.queriedFeature', 'vscode.variant']]),
+                sharedProperties: new Map([['assignmentContext', 'fresh;']]),
+            },
+        ]);
+    });
+
+    it('fetches on a cache miss and returns undefined for unknown configs and variables', async () => {
+        const provider = new BaseFeatureProviderMock(fresh);
+        const service = createService([provider]);
+        await service.initializePromise;
+
+        expect(await service.getTreatmentVariableAsync('missing', 'variant', true)).toBeUndefined();
+        expect(await service.getTreatmentVariableAsync('vscode', 'missing', true)).toBeUndefined();
+        expect(provider.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('deduplicates query telemetry across sync, cached, and async entry points', async () => {
+        const service = createService([new BaseFeatureProviderMock(fresh)]);
+        await service.initializePromise;
+        await service.refresh();
+
+        service.isFlightEnabled('freshFlight');
+        await service.isCachedFlightEnabled('freshFlight');
+        await service.isFlightEnabledAsync('freshFlight');
+        service.getTreatmentVariable('vscode', 'variant');
+        await service.getTreatmentVariableAsync('vscode', 'variant', true);
+        service.getTreatmentVariable('extension', 'variant');
+
+        expect(
+            telemetry
+                .eventsNamed('query-expfeature')
+                .map((event) => event.args.get('ABExp.queriedFeature')),
+        ).toEqual(['freshFlight', 'vscode.variant', 'extension.variant']);
     });
 });
-
-describe('Await initial fetch tests', () => {
-    const testSpecs: FeatureProviderTestSpec[] = [
-        {
-            fetchDelay: 200,
-            fetchResolver: new FetchResolver(
-                { features: ['kirby'], assignmentContext: '', configs: [{ Id: 'test', Parameters: { 'character1': 'kirby', 'hp1': 20 } }] }
-            )
-        }
-    ];
-
-    it('should resolve and update in memory features when initial fetch completes.', async () => {
-        const storage = new KeyValueStorageMock();
-        const service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-
-        await service.initialFetch;
-        const kirby = service.getTreatmentVariable<string>('test', 'character1');
-
-        expect(kirby).to.equal('kirby');
-    });
-
-    it('should resolve and update in memory features when complete.', async () => {
-        const storage = new KeyValueStorageMock();
-        const service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-
-        await service.initializePromise;
-        const kirby = await service.getTreatmentVariableAsync<string>('test', 'character1', true);
-
-        expect(kirby).to.equal('kirby');
-    });
-
-    it('should resolve if feature provider throws.', async () => {
-        const storage = new KeyValueStorageMock();
-        const service = new ExperimentationServiceMock([new ThrowFeatureProvider()], [], 0, undefined, storage);
-
-        await service.initialFetch;
-
-        expect(true).to.equal(true);
-    });
-
-    it('getTreatmentVariableAsync should resolve if feature provider throws.', async () => {
-        const storage = new KeyValueStorageMock();
-        const service = new ExperimentationServiceMock([new ThrowFeatureProvider()], [], 0, undefined, storage);
-
-        await service.initializePromise;
-        const value = await service.getTreatmentVariableAsync('test', 'character1');
-
-        expect(value).to.equal(undefined);
-    });
-
-    it('should not override in memory feature data if already consumed.', async () => {
-        const storage = new KeyValueStorageMock();
-        const service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-
-        const kirbyPre = service.getTreatmentVariable<string>('test', 'character1');
-        await service.initialFetch;
-        const kirbyPost = service.getTreatmentVariable<string>('test', 'character1');
-
-        expect(kirbyPre).to.equal(undefined);
-        expect(kirbyPost).to.equal(undefined);
-    });
-
-    it('should return without waiting for fetch if variable in cache.', async () => {
-        const storage = new KeyValueStorageMock();
-        storage.setValue<FeatureData>('StorageKey', { features: [], assignmentContext: '', configs: [{ Id: 'test', Parameters: { character1: 'falco' } }] });
-        const service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-
-        await service.initializePromise;
-        const falcoPre = await service.getTreatmentVariableAsync<string>('test', 'character1', true);
-        await service.initialFetch;
-        const falcoPost = service.getTreatmentVariable<string>('test', 'character1');
-        const kirby = (await storage.getValue<FeatureData>('StorageKey'))?.configs[0].Parameters.character1;
-
-        expect(falcoPre).to.equal('falco');
-        expect(falcoPost).to.equal('falco');
-        expect(kirby).to.equal('kirby');
-    });
-
-    it('should return without waiting for fetch if variable in cache, even if cache value falsey.', async () => {
-        const storage = new KeyValueStorageMock();
-        storage.setValue<FeatureData>('StorageKey', { features: [], assignmentContext: '', configs: [{ Id: 'test', Parameters: { character1: false } }] });
-        const service = new ExperimentationServiceMock([], testSpecs, 0, undefined, storage);
-
-        await service.initializePromise;
-        const characterPre = await service.getTreatmentVariableAsync<string>('test', 'character1', true);
-        await service.initialFetch;
-        const characterPost = service.getTreatmentVariable<string>('test', 'character1');
-        const kirby = (await storage.getValue<FeatureData>('StorageKey'))?.configs[0].Parameters.character1;
-
-        expect(characterPre).to.equal(false);
-        expect(characterPost).to.equal(false);
-        expect(kirby).to.equal('kirby');
-    });
-
-});
-
-/** Other possible tests to do: */
-//- Test wether the promise for fetch is re-used.
-//- Test that intervals stop when update is force requested, and starts once it finishes.
-//- Test that intervals work individually.

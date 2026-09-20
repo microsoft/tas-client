@@ -3,62 +3,56 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ExperimentationFilterProviderTwoFilterMock } from './mocks/ExperimentationFilterProviderMock.js';
-import { expect, describe, it } from 'vitest';
-import { FetchResolver } from './mocks/FetchResolver.js';
-import { BaseFeatureProviderMock } from './mocks/BaseFeatureProviderMock.js';
-import { ExperimentationTelemetryMock } from './mocks/ExperimentationTelemetryMock.js';
-import { MockFilteredFeatureProvider } from './mocks/MockFilteredFeatureProvider.js';
+import { describe, expect, it } from 'vitest';
+import { FeatureData } from '../src/tas-client/FeatureProvider/IFeatureProvider.js';
+import { BaseFeatureProviderMock, createFeatureData } from './mocks/BaseFeatureProviderMock.js';
+import { Deferred } from './mocks/Deferred.js';
 
-/**
- * For this test we want to ensure the unique capability of a Feature provider, which is to call the fetch method everytime it's called.
- */
-describe('Feature Provider tests', () => {
-    /**
-     * Resolver that is expected to be called three times (two by auto-polling).
-     * First time it will return both features.
-     * Second time it will return just feature 1.
-     * Third time it will return feature 2.
-     */
-    let resolver = new FetchResolver({ features: ['feature1', 'feature2'], assignmentContext: '', configs: [] },
-                                    { features: ['feature1'], assignmentContext: '', configs: [] },
-                                    { features: ['feature2'], assignmentContext: '', configs: [] });
-    //setup
-    let featureProvider: BaseFeatureProviderMock | undefined = new BaseFeatureProviderMock(
-        new ExperimentationTelemetryMock(),
-        resolver,
-    );
+describe('BaseFeatureProvider', () => {
+    it('shares an in-flight request but fetches again after it completes', async () => {
+        const pending = new Deferred<FeatureData>();
+        const initial = createFeatureData({ features: ['editor.preview'] });
+        const updated = createFeatureData({ features: ['editor.stable'] });
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(updated);
 
-    /**
-     * A feature provider will be started by calling the getFeatures method.
-     * This will retrieve the first set of data.
-     * Consecuentially, all other getFeatures that are called, will re-fectch, as a feature provider does not hold cache.
-     */
-    it('Feature provider should always run fetch whenever features are accessed. They do not hold cache.', async () => {
-        //evaluate
-        let features = await featureProvider!.getFeatures();
-        expect(features.features).toEqual(['feature1', 'feature2']);
+        const requests = [provider.getFeatures(), provider.getFeatures(), provider.getFeatures()];
+        expect(provider.fetch).toHaveBeenCalledTimes(1);
 
-        features = await featureProvider!.getFeatures();
-        expect(features.features).toEqual(['feature1']);
-
-        features = await featureProvider!.getFeatures();
-        expect(features.features).toEqual(['feature2']);
+        pending.resolve(initial);
+        expect(await Promise.all(requests)).toEqual([initial, initial, initial]);
+        expect(await provider.getFeatures()).toEqual(updated);
+        expect(provider.fetch).toHaveBeenCalledTimes(2);
     });
 
-    it('Feature provider should post headers to telemetry.', async () => {
-        const telemetryMock = new ExperimentationTelemetryMock();
-        const filteredFeatureProvider = new MockFilteredFeatureProvider(
-            telemetryMock,
-            [new ExperimentationFilterProviderTwoFilterMock()]
-        );
+    it('rejects all waiting callers and allows a fresh request after a failure', async () => {
+        const pending = new Deferred<FeatureData>();
+        const error = new Error('Connection reset');
+        const recovered = createFeatureData({ features: ['editor.preview'] });
+        const provider = new BaseFeatureProviderMock();
+        provider.fetch.mockReturnValueOnce(pending.promise).mockResolvedValueOnce(recovered);
 
-        // In the fetch method we're posting the headers.
-        await filteredFeatureProvider.fetch();
+        const first = expect(provider.getFeatures()).rejects.toBe(error);
+        const second = expect(provider.getFeatures()).rejects.toBe(error);
+        pending.reject(error);
+        await Promise.all([first, second]);
 
-        expect(telemetryMock.postedEvents.length).toBeGreaterThan(0);
-        const postedEvent = telemetryMock.postedEvents[0];
-        const postedEventArgs = postedEvent.args.get('ABExp.headers');
-        expect(postedEventArgs).toBe('{"lucario":true,"wario":false}');
+        expect(await provider.getFeatures()).toEqual(recovered);
+        expect(provider.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('can retry after a fetch implementation throws synchronously', async () => {
+        const provider = new BaseFeatureProviderMock();
+        const error = new Error('Transport setup failed');
+        const data = createFeatureData();
+        provider.fetch
+            .mockImplementationOnce(() => {
+                throw error;
+            })
+            .mockResolvedValueOnce(data);
+
+        await expect(provider.getFeatures()).rejects.toBe(error);
+        await expect(provider.getFeatures()).resolves.toEqual(data);
+        expect(provider.fetch).toHaveBeenCalledTimes(2);
     });
 });

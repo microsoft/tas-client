@@ -19,6 +19,8 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
     protected featureProviders?: IFeatureProvider[];
     protected fetchPromise?: Promise<(FeatureData | undefined)[]>;
     protected featuresConsumed = false;
+    private hasFetchedFeatures = false;
+    private overrideInMemoryFeatures = false;
     private loadCachePromise: Promise<void>;
     public readonly initializePromise: Promise<void>;
     private resolveInitialFetchPromise: (() => void) | undefined;
@@ -58,7 +60,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         }
 
         if (!this.storage) {
-            storage = new MemoryKeyValueStorage();
+            this.storage = new MemoryKeyValueStorage();
         }
 
         this.loadCachePromise = this.loadCachedFeatureData();
@@ -78,6 +80,8 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
          * We return that as result.
          */
         if (this.fetchPromise != null) {
+            // A manual lookup joining a background fetch must also receive the fresh assignments.
+            this.overrideInMemoryFeatures ||= overrideInMemoryFeatures;
             try {
                 await this.fetchPromise;
             } catch {
@@ -94,6 +98,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             });
         }
 
+        this.overrideInMemoryFeatures = overrideInMemoryFeatures;
         try {
             /**
              * Fetch all from providers. Provider failures are isolated so that one provider
@@ -116,13 +121,14 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
             // Only update when at least one provider succeeded, so a total failure keeps
             // the previously cached features instead of clobbering them with empty data.
             if (successfulResults.length > 0) {
-                this.updateFeatures(successfulResults, overrideInMemoryFeatures);
+                this.updateFeatures(successfulResults, this.overrideInMemoryFeatures);
             }
         } catch {
             // Fetching features threw error. Can happen if not connected to the internet, e.g.
         }
 
         this.fetchPromise = undefined;
+        this.overrideInMemoryFeatures = false;
 
         if (this.resolveInitialFetchPromise) {
             this.resolveInitialFetchPromise();
@@ -165,7 +171,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
                         ...config.Parameters,
                     };
                 } else {
-                    features.configs.push(config);
+                    features.configs.push({ Id: config.Id, Parameters: { ...config.Parameters } });
                 }
             }
             if (result.assignmentContext) {
@@ -181,6 +187,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         /**
          * Set the obtained feature values to the global features variable. This stores them in memory.
          */
+        this.hasFetchedFeatures = true;
         if (overrideInMemoryFeatures || !this.featuresConsumed) {
             this.features = features;
         }
@@ -202,7 +209,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
                 cachedFeatureData.configs = [];
             }
         }
-        if (this.features.features.length === 0) {
+        if (!this.hasFetchedFeatures) {
             this.features = cachedFeatureData || {
                 features: [],
                 assignmentContext: '',
@@ -240,6 +247,7 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
      * @param flight the flight to check.
      */
     public async isFlightEnabledAsync(flight: string): Promise<boolean> {
+        await this.loadCachePromise;
         const features = await this.getFeaturesAsync(true);
         this.featuresConsumed = true;
         this.PostEventToTelemetry(flight);
@@ -259,6 +267,13 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
     ): T | undefined {
         this.featuresConsumed = true;
         this.PostEventToTelemetry(`${configId}.${name}`);
+        return this.getTreatmentVariableValue<T>(configId, name);
+    }
+
+    private getTreatmentVariableValue<T extends boolean | number | string>(
+        configId: string,
+        name: string,
+    ): T | undefined {
         const config = this.features.configs.find((c) => c.Id === configId);
         return config?.Parameters[name] as T;
     }
@@ -276,13 +291,11 @@ export abstract class ExperimentationServiceBase implements IExperimentationServ
         name: string,
         checkCache?: boolean,
     ): Promise<T | undefined> {
+        await this.loadCachePromise;
         if (checkCache) {
-            const _featuresConsumed = this.featuresConsumed;
-            const cachedValue = this.getTreatmentVariable<T>(configId, name);
-            if (cachedValue === undefined) {
-                this.featuresConsumed = _featuresConsumed;
-            } else {
-                return cachedValue;
+            const cachedValue = this.getTreatmentVariableValue<T>(configId, name);
+            if (cachedValue !== undefined) {
+                return this.getTreatmentVariable<T>(configId, name);
             }
         }
         await this.getFeaturesAsync(true);
