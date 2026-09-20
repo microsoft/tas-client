@@ -4,12 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 export { IExperimentationFilterProvider } from './contracts/IExperimentationFilterProvider.js';
-export { IExperimentationService } from './contracts/IExperimentationService.js';
+export {
+    IExperimentationService,
+    ITreatmentWithExposure,
+} from './contracts/IExperimentationService.js';
 export { IExperimentationTelemetry } from './contracts/IExperimentationTelemetry.js';
 export { IKeyValueStorage } from './contracts/IKeyValueStorage.js';
 export { ExperimentationService } from './tas-client/ExperimentationService.js';
 export {
     ExperimentationServiceConfig,
+    DeferredAssignmentContext,
     FetchFn,
     AssignmentsFetchFn,
     IFetchResponse,

@@ -6,7 +6,10 @@
 import { IExperimentationFilterProvider } from '../../contracts/IExperimentationFilterProvider.js';
 import { FetchError, FetchResult, HttpClient } from '../Util/HttpClient.js';
 import { IExperimentationTelemetry } from '../../contracts/IExperimentationTelemetry.js';
-import { AssignmentsFetchFn } from '../../contracts/ExperimentationServiceConfig.js';
+import {
+    AssignmentsFetchFn,
+    DeferredAssignmentContext,
+} from '../../contracts/ExperimentationServiceConfig.js';
 import { FilteredFeatureProvider } from './FilteredFeatureProvider.js';
 import { FeatureData } from './IFeatureProvider.js';
 
@@ -47,6 +50,7 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
         protected endpoint?: string,
         protected fetchFn?: AssignmentsFetchFn,
         protected extensionName?: string,
+        private readonly deferredAssignmentContexts: readonly DeferredAssignmentContext[] = [],
     ) {
         super(telemetry, filterProviders);
     }
@@ -97,7 +101,10 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
 
             // Convert inside the guarded path so a malformed response is treated as a
             // failure (rejects) rather than being reported as a successful empty result.
-            const featureData = AssignmentsApiFeatureProvider.toFeatureData(responseData);
+            const featureData = AssignmentsApiFeatureProvider.toFeatureData(
+                responseData,
+                this.deferredAssignmentContexts,
+            );
 
             try {
                 const properties: Map<string, string> = new Map();
@@ -138,13 +145,23 @@ export class AssignmentsApiFeatureProvider extends FilteredFeatureProvider {
      * variables are also listed as enabled flights. The legacy `cf` suffix convention is
      * intentionally not applied to the new endpoint.
      */
-    private static toFeatureData(response: AssignmentResponse): FeatureData {
+    private static toFeatureData(
+        response: AssignmentResponse,
+        deferredAssignmentContexts: readonly DeferredAssignmentContext[],
+    ): FeatureData {
         const featureVariables = response.featureVariables || {};
+        const contextIdVariables = new Set(
+            deferredAssignmentContexts
+                .filter((entry) => entry.configId === AssignmentsApiFeatureProvider.CONFIG_ID)
+                .map((entry) => `${entry.name}.contextId`),
+        );
         const parameters: { [key: string]: boolean | number | string } = {};
         const features: string[] = [];
         for (const key of Object.keys(featureVariables)) {
-            const value = AssignmentsApiFeatureProvider.coerce(featureVariables[key]);
             const name = AssignmentsApiFeatureProvider.stripScopePrefix(key);
+            const value = contextIdVariables.has(name)
+                ? featureVariables[key]
+                : AssignmentsApiFeatureProvider.coerce(featureVariables[key]);
             parameters[name] = value;
             if (value && !features.includes(name)) {
                 features.push(name);

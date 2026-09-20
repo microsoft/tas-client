@@ -6,6 +6,8 @@
 export {
     IKeyValueStorage,
     IExperimentationService,
+    ITreatmentWithExposure,
+    DeferredAssignmentContext,
     IExperimentationTelemetry,
     IExperimentationFilterProvider,
     AssignmentsFetchFn,

@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IExperimentationService } from 'tas-client';
+import { IExperimentationService, ITreatmentWithExposure } from 'tas-client';
 
 export default class TelemetryDisabledExperimentationService implements IExperimentationService {
     public initializePromise: Promise<void> = Promise.resolve();
@@ -37,5 +37,19 @@ export default class TelemetryDisabledExperimentationService implements IExperim
 
     public dispose(): void {
         // No-op: telemetry is disabled, nothing to clean up.
+    }
+
+    public getTreatmentVariableWithExposure<T extends string | number | boolean>(
+        configId: string,
+        name: string,
+    ): ITreatmentWithExposure<T> {
+        return { value: undefined, release: () => false };
+    }
+
+    public async getTreatmentVariableWithExposureAsync<T extends string | number | boolean>(
+        configId: string,
+        name: string,
+    ): Promise<ITreatmentWithExposure<T>> {
+        return this.getTreatmentVariableWithExposure<T>(configId, name);
     }
 }

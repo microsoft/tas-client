@@ -11,6 +11,7 @@ import {
     IExperimentationFilterProvider,
     AssignmentsFetchFn,
     FetchFn,
+    DeferredAssignmentContext,
 } from 'tas-client';
 import * as vscode from 'vscode';
 import { MementoKeyValueStorage } from './MementoKeyValueStorage';
@@ -59,6 +60,8 @@ export interface ExperimentationConfig {
      * A per-endpoint {@link assignmentsFetch}, if set, takes precedence for assignments.
      */
     fetch?: FetchFn;
+    /** Feature flags whose `.contextId` companions identify assignments requiring explicit release. */
+    deferredAssignmentContexts?: readonly DeferredAssignmentContext[];
 }
 
 /**
@@ -103,6 +106,7 @@ export function getExperimentationServiceFromConfig(
         keyValueStorage: keyValueStorage,
         featuresTelemetryPropertyName: '',
         assignmentContextTelemetryPropertyName: assignmentContextTelemetryPropertyName,
+        deferredAssignmentContexts: config.deferredAssignmentContexts,
         telemetryEventName: telemetryEventName,
         endpoint: endpoint,
         extensionName: config.extensionName,

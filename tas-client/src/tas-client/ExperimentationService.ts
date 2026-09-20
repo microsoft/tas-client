@@ -31,6 +31,7 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
             options.telemetryEventName,
             options.storageKey,
             options.keyValueStorage,
+            options.deferredAssignmentContexts,
         );
         this.invokeInit();
     }
@@ -65,6 +66,7 @@ export class ExperimentationService extends ExperimentationServiceAutoPolling {
                     this.options.assignmentsEndpoint,
                     this.options.assignmentsFetch ?? this.options.fetch,
                     this.options.extensionName,
+                    this.deferredAssignmentContexts,
                 ),
             );
         }

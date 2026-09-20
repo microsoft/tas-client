@@ -23,6 +23,27 @@ Once you have an instance of `IExperimentationService` you can call `getTreatmen
 
 > note: if you haven't awaited the `IExperimentationService`'s `initializePromise`, or, equivallently, used `getExperimentationServiceAsync` to get the `IExperimentationService` instance, you need to use `getTreatmentVariableAsync`.
 
+### Deferred exposure
+
+Pass `deferredAssignmentContexts: [{ configId: 'vscode', name: 'tour.show' }]` to
+`getExperimentationServiceFromConfig` to withhold selected assignments from shared telemetry
+until the treatment response is released:
+
+```typescript
+const treatment = await service.getTreatmentVariableWithExposureAsync<boolean>(
+    'vscode', 'tour.show', true,
+);
+// Once the user reaches the same eligibility point in either experiment arm:
+treatment.release();
+```
+
+Configure the list at startup. Each arm must supply `tour.show.contextId` containing only its
+variant name, alongside the `tour.show` value. TAS finds the generated allocation ID itself.
+Treatment reads do not release assignments, and an old response cannot release a new allocation.
+Releases persist exact allocations in the extension memento. See the
+[base client's contract and example](../tas-client/README.md#deferred-assignment-context).
+The telemetry-disabled service never releases assignments.
+
 ## Details
 ### Telemetry
 vscode-tas-client will handle sending all needed telemetry to analyze your experiment. Specifically, it sends an event `query-expfeature` the first time a given flight or treatment variable is requested (for counterfactual logging purposes) and attaches the common properties `vscode.abexp.features` - a list of treatment variables - and `abexp.assignmentcontext` - a list of flight names - to all telemetry events your extension sends.
