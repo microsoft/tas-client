@@ -40,7 +40,6 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^22.19.15",
-    "@types/semver": "^7.5.5",
     "@typescript-eslint/parser": "^8.56.1",
     "@vitest/ui": "^4.1.8",
     "esbuild": "^0.28.1",
