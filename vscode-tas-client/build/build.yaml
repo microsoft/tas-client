@@ -26,6 +26,7 @@ extends:
   parameters:
     npmPackages:
       - name: vscode-tas-client
+        skipAPIScan: ${{ or(eq(variables['Build.Reason'], 'PullRequest'), not(or(eq(variables['Build.SourceBranch'], 'refs/heads/main'), startsWith(variables['Build.SourceBranch'], 'refs/heads/release/')))) }}
 
         testPlatforms:
           - name: Linux
